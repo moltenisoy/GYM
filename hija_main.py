@@ -8,8 +8,13 @@
 # 3. Gestionar el estado de la aplicación, mostrando el 'LoginFrame'
 #    o el 'MainAppFrame' según corresponda (Conmutación de Frames).
 # 4. Proveer las funciones de callback que la GUI ('hija_views') ejecutará.
+# 5. Implementar sincronización automática en segundo plano.
+# 6. Validar sincronización cada 72 horas (bloqueo si no se cumple).
 
 import customtkinter
+import threading
+import time
+from datetime import datetime
 from hija_comms import APICommunicator
 from hija_views import LoginFrame, MainAppFrame
 
@@ -21,12 +26,13 @@ class AppHija(customtkinter.CTk):
     """
     Clase principal de la aplicación Hija (Controlador).
     Hereda de CTk para ser la ventana raíz.
+    Implementa sincronización automática en segundo plano.
     """
     def __init__(self):
         super().__init__()
         
-        self.title("Aplicación Hija")
-        self.geometry("600x450")
+        self.title("Aplicación Hija - Gimnasio")
+        self.geometry("800x600")
         
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -34,14 +40,19 @@ class AppHija(customtkinter.CTk):
         # --- Inicialización del Controlador ---
         self.communicator = APICommunicator()
         self.current_username = None
+        self.current_user_data = None
+        
+        # --- Control de sincronización ---
+        self.sync_thread = None
+        self.sync_running = False
+        self.sync_interval = 300  # 5 minutos inicialmente (en segundos)
+        self.first_sync_done = False
         
         # --- Almacenamiento de Vistas ---
-        # El patrón de "conmutación de frames" implica destruir y crear
-        # los frames principales.
         self._current_frame = None
         
-        # Iniciar el flujo de la aplicación mostrando el Login
-        self._mostrar_login()
+        # Intentar auto-login si hay credenciales guardadas
+        self._intentar_auto_login()
 
     def _limpiar_frames_actuales(self):
         """
@@ -52,6 +63,37 @@ class AppHija(customtkinter.CTk):
             self._current_frame.destroy()
             self._current_frame = None
 
+    def _intentar_auto_login(self):
+        """
+        Intenta realizar auto-login con credenciales guardadas.
+        Valida también que la sincronización esté al día (72 horas).
+        """
+        creds = self.communicator.load_credentials()
+        if not creds:
+            # No hay credenciales guardadas, mostrar login normal
+            self._mostrar_login()
+            return
+        
+        username = creds.get('username')
+        
+        # Validar estado de sincronización (72 horas)
+        valid, validation_data = self.communicator.validate_sync_status(username)
+        
+        if not valid and validation_data.get('bloqueado'):
+            # Necesita sincronizar antes de continuar
+            # Limpiar credenciales y forzar nuevo login
+            self.communicator.clear_credentials()
+            self._mostrar_login()
+            return
+        
+        # Auto-login exitoso
+        self.current_username = username
+        self.current_user_data = {
+            'username': username,
+            'nombre_completo': creds.get('nombre_completo', username)
+        }
+        self._mostrar_app_principal()
+    
     def _mostrar_login(self):
         """
         Crea y muestra el LoginFrame.
@@ -61,45 +103,49 @@ class AppHija(customtkinter.CTk):
         self.title("Aplicación Hija - Iniciar Sesión")
         self.geometry("600x450")
         
-        # Instanciar el LoginFrame, pasándole '_intentar_login' como
-        # el callback 'on_login_attempt'.
+        # Instanciar el LoginFrame
         self._current_frame = LoginFrame(master=self, on_login_attempt=self._intentar_login)
         self._current_frame.pack(padx=20, pady=20, fill="both", expand=True)
 
-    def _intentar_login(self, username: str):
+    def _intentar_login(self, username: str, password: str):
         """
         Callback de lógica de negocio. Es llamado por LoginFrame.
-        Usa el 'communicator' para intentar el login.
+        Usa el 'communicator' para intentar el login con contraseña.
         """
-        success, message = self.communicator.attempt_login(username)
+        success, data = self.communicator.attempt_login(username, password)
         
         if success:
-            self.current_username = message  # El mensaje de éxito es el nombre de usuario
+            self.current_username = username
+            self.current_user_data = data
             # Transición a la aplicación principal
             self._mostrar_app_principal()
         else:
             # Mostrar el error en la GUI de Login
-            # Necesitamos acceder al método 'show_status' del frame de login
             if isinstance(self._current_frame, LoginFrame):
-                self._current_frame.show_status(message, is_error=True)
+                self._current_frame.show_status(data, is_error=True)
 
     def _mostrar_app_principal(self):
         """
         Crea y muestra el MainAppFrame después de un login exitoso.
+        Inicia la sincronización automática en segundo plano.
         """
         self._limpiar_frames_actuales()
         
-        self.title(f"Aplicación Hija - {self.current_username}")
-        self.geometry("700x500")
+        nombre = self.current_user_data.get('nombre_completo', self.current_username)
+        self.title(f"Aplicación Hija - {nombre}")
+        self.geometry("900x700")
         
-        # Instanciar el MainAppFrame, pasando el nombre de usuario
-        # y el callback de sincronización.
+        # Instanciar el MainAppFrame
         self._current_frame = MainAppFrame(
             master=self,
             username=self.current_username,
+            user_data=self.current_user_data,
             on_sync_attempt=self._intentar_sync
         )
         self._current_frame.pack(fill="both", expand=True)
+        
+        # Iniciar sincronización automática en segundo plano
+        self._iniciar_sync_automatica()
 
     def _intentar_sync(self):
         """
@@ -115,14 +161,103 @@ class AppHija(customtkinter.CTk):
         
         if isinstance(self._current_frame, MainAppFrame):
             if success:
-                # Si es exitoso, 'data' es un diccionario con el contenido
-                contenido = data.get("contenido", "No se recibió contenido.")
-                version = data.get("metadatos_version", "N/A")
-                self._current_frame.update_content(contenido, version)
+                # Actualizar todas las pestañas con los datos sincronizados
+                self._current_frame.update_content(data)
+                
+                # Marcar que la primera sincronización fue exitosa
+                if not self.first_sync_done:
+                    self.first_sync_done = True
+                    # Cambiar intervalo a 30 minutos después de primera sync exitosa
+                    self.sync_interval = 1800  # 30 minutos
+                    print("Primera sincronización exitosa. Intervalo cambiado a 30 minutos.")
             else:
                 # Si falla, 'data' es un diccionario con un error
                 error_msg = data.get("error", "Error de sincronización desconocido.")
                 self._current_frame.show_sync_error(error_msg)
+    
+    def _iniciar_sync_automatica(self):
+        """
+        Inicia un hilo de sincronización automática en segundo plano.
+        Sincroniza cada 5 minutos inicialmente, luego cada 30 minutos tras la primera sync exitosa.
+        """
+        if self.sync_running:
+            return  # Ya hay una sincronización en progreso
+        
+        self.sync_running = True
+        self.sync_thread = threading.Thread(target=self._sync_loop, daemon=True)
+        # Configurar prioridad más baja (en sistemas Unix)
+        try:
+            import os
+            if hasattr(os, 'nice'):
+                os.nice(10)  # Aumentar nice value = menor prioridad
+        except:
+            pass
+        
+        self.sync_thread.start()
+        print("Sincronización automática iniciada en segundo plano")
+    
+    def _sync_loop(self):
+        """
+        Loop de sincronización que se ejecuta en segundo plano.
+        Respeta el intervalo configurado (5 min inicial, 30 min después).
+        """
+        # Primera sincronización inmediata
+        time.sleep(2)  # Pequeña espera para que la GUI se cargue
+        self._sync_en_background()
+        
+        while self.sync_running:
+            # Esperar el intervalo configurado
+            time.sleep(self.sync_interval)
+            
+            if not self.sync_running:
+                break
+            
+            # Realizar sincronización
+            self._sync_en_background()
+    
+    def _sync_en_background(self):
+        """
+        Realiza una sincronización en segundo plano sin bloquear la GUI.
+        """
+        if not self.current_username:
+            return
+        
+        try:
+            # Actualizar status en la GUI
+            if isinstance(self._current_frame, MainAppFrame):
+                self.after(0, lambda: self._current_frame.update_sync_status(
+                    "Sincronizando en segundo plano...", True
+                ))
+            
+            success, data = self.communicator.fetch_sync_data(self.current_username)
+            
+            if success:
+                # Actualizar GUI en el hilo principal
+                if isinstance(self._current_frame, MainAppFrame):
+                    self.after(0, lambda: self._current_frame.update_content(data))
+                    self.after(0, lambda: self._current_frame.update_sync_status(
+                        f"Sincronización automática activa (cada {self.sync_interval//60} min)"
+                    ))
+                
+                # Marcar primera sync como exitosa
+                if not self.first_sync_done:
+                    self.first_sync_done = True
+                    self.sync_interval = 1800  # Cambiar a 30 minutos
+                    print("Primera sincronización automática exitosa. Intervalo -> 30 min")
+            else:
+                print(f"Error en sincronización automática: {data.get('error', 'Desconocido')}")
+                
+        except Exception as e:
+            print(f"Excepción en sincronización automática: {e}")
+    
+    def destroy(self):
+        """
+        Override del método destroy para detener la sincronización al cerrar.
+        """
+        self.sync_running = False
+        if self.sync_thread and self.sync_thread.is_alive():
+            self.sync_thread.join(timeout=1)
+        super().destroy()
 
 # --- Punto de Entrada ---
 if __name__ == "__main__":
