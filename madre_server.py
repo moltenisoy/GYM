@@ -200,6 +200,186 @@ async def obtener_usuarios():
         "usuarios": usuarios
     }
 
+# ============================================================================
+# ENDPOINTS DE MENSAJERÍA
+# ============================================================================
+
+class MessageRequest(BaseModel):
+    from_user: str
+    to_user: str
+    subject: str
+    body: str
+    parent_message_id: Optional[int] = None
+
+class ChatMessageRequest(BaseModel):
+    from_user: str
+    to_user: str
+    message: str
+
+@app.post("/enviar_mensaje", summary="Enviar mensaje")
+async def enviar_mensaje(request: MessageRequest):
+    """Endpoint para enviar un mensaje."""
+    message_id = madre_db.send_message(
+        request.from_user,
+        request.to_user,
+        request.subject,
+        request.body,
+        request.parent_message_id
+    )
+    
+    if message_id:
+        return {
+            "status": "mensaje_enviado",
+            "message_id": message_id,
+            "timestamp": datetime.now().isoformat()
+        }
+    else:
+        raise HTTPException(status_code=500, detail="Error al enviar mensaje")
+
+@app.get("/obtener_mensajes", summary="Obtener mensajes del usuario")
+async def obtener_mensajes(
+    usuario: str = Query(..., description="Nombre de usuario"),
+    solo_no_leidos: bool = Query(False, description="Solo mensajes no leídos")
+):
+    """Endpoint para obtener mensajes de un usuario."""
+    messages = madre_db.get_user_messages(usuario, include_read=not solo_no_leidos)
+    unread_count = madre_db.count_unread_messages(usuario)
+    
+    return {
+        "status": "ok",
+        "total_mensajes": len(messages),
+        "mensajes_no_leidos": unread_count,
+        "mensajes": messages
+    }
+
+@app.get("/obtener_mensaje/{message_id}", summary="Obtener mensaje específico")
+async def obtener_mensaje(message_id: int):
+    """Endpoint para obtener un mensaje específico con adjuntos."""
+    message = madre_db.get_message_by_id(message_id)
+    if not message:
+        raise HTTPException(status_code=404, detail="Mensaje no encontrado")
+    
+    attachments = madre_db.get_message_attachments(message_id)
+    message['attachments'] = attachments
+    
+    return {
+        "status": "ok",
+        "mensaje": message
+    }
+
+@app.post("/marcar_leido/{message_id}", summary="Marcar mensaje como leído")
+async def marcar_leido(message_id: int):
+    """Endpoint para marcar un mensaje como leído."""
+    success = madre_db.mark_message_read(message_id)
+    if success:
+        return {"status": "marcado_leido", "message_id": message_id}
+    else:
+        raise HTTPException(status_code=404, detail="Mensaje no encontrado")
+
+@app.delete("/eliminar_mensaje/{message_id}", summary="Eliminar mensaje")
+async def eliminar_mensaje(message_id: int):
+    """Endpoint para eliminar un mensaje."""
+    success = madre_db.delete_message(message_id)
+    if success:
+        return {"status": "mensaje_eliminado", "message_id": message_id}
+    else:
+        raise HTTPException(status_code=404, detail="Mensaje no encontrado")
+
+@app.get("/contar_no_leidos", summary="Contar mensajes no leídos")
+async def contar_no_leidos(usuario: str = Query(..., description="Nombre de usuario")):
+    """Endpoint para contar mensajes no leídos."""
+    count = madre_db.count_unread_messages(usuario)
+    return {
+        "status": "ok",
+        "usuario": usuario,
+        "mensajes_no_leidos": count
+    }
+
+# ============================================================================
+# ENDPOINTS DE CHAT EN VIVO
+# ============================================================================
+
+@app.post("/enviar_chat", summary="Enviar mensaje de chat en vivo")
+async def enviar_chat(request: ChatMessageRequest):
+    """Endpoint para enviar un mensaje de chat en vivo."""
+    chat_id = madre_db.send_chat_message(
+        request.from_user,
+        request.to_user,
+        request.message
+    )
+    
+    if chat_id:
+        return {
+            "status": "chat_enviado",
+            "chat_id": chat_id,
+            "timestamp": datetime.now().isoformat()
+        }
+    else:
+        raise HTTPException(status_code=500, detail="Error al enviar chat")
+
+@app.get("/obtener_chat", summary="Obtener historial de chat")
+async def obtener_chat(
+    user1: str = Query(..., description="Usuario 1"),
+    user2: str = Query(..., description="Usuario 2"),
+    limit: int = Query(50, description="Límite de mensajes")
+):
+    """Endpoint para obtener historial de chat entre dos usuarios."""
+    messages = madre_db.get_chat_history(user1, user2, limit)
+    return {
+        "status": "ok",
+        "total_mensajes": len(messages),
+        "mensajes": messages
+    }
+
+@app.post("/marcar_chat_leido", summary="Marcar mensajes de chat como leídos")
+async def marcar_chat_leido(
+    from_user: str = Query(..., description="Usuario remitente"),
+    to_user: str = Query(..., description="Usuario destinatario")
+):
+    """Endpoint para marcar mensajes de chat como leídos."""
+    madre_db.mark_chat_messages_read(from_user, to_user)
+    return {"status": "chat_marcado_leido"}
+
+@app.get("/contar_chat_no_leidos", summary="Contar mensajes de chat no leídos")
+async def contar_chat_no_leidos(usuario: str = Query(..., description="Nombre de usuario")):
+    """Endpoint para contar mensajes de chat no leídos."""
+    count = madre_db.count_unread_chat_messages(usuario)
+    return {
+        "status": "ok",
+        "usuario": usuario,
+        "chat_no_leidos": count
+    }
+
+# ============================================================================
+# ENDPOINTS DE MULTI-MADRE
+# ============================================================================
+
+@app.post("/registrar_servidor_madre", summary="Registrar otro servidor Madre")
+async def registrar_servidor_madre(
+    server_name: str = Query(..., description="Nombre del servidor"),
+    server_url: str = Query(..., description="URL del servidor"),
+    sync_token: str = Query("", description="Token de sincronización")
+):
+    """Endpoint para registrar otro servidor Madre para sincronización."""
+    success = madre_db.add_madre_server(server_name, server_url, sync_token)
+    if success:
+        return {
+            "status": "servidor_registrado",
+            "server_name": server_name
+        }
+    else:
+        raise HTTPException(status_code=400, detail="Servidor ya registrado")
+
+@app.get("/obtener_servidores_madre", summary="Obtener servidores Madre registrados")
+async def obtener_servidores_madre():
+    """Endpoint para obtener todos los servidores Madre registrados."""
+    servers = madre_db.get_all_madre_servers()
+    return {
+        "status": "ok",
+        "total": len(servers),
+        "servidores": servers
+    }
+
 @app.get("/", summary="Endpoint raíz de estado")
 async def root():
     """
@@ -207,12 +387,15 @@ async def root():
     """
     return {
         "mensaje": "Servidor de la Aplicación Madre está en línea.",
-        "version": "2.0.0",
+        "version": "3.0.0",
         "features": [
             "Autenticación con contraseña",
             "Base de datos SQLite persistente",
             "Validación de sincronización 72h",
             "Sincronización masiva",
-            "Gestión completa de usuarios"
+            "Gestión completa de usuarios",
+            "Sistema de mensajería",
+            "Chat en vivo",
+            "Soporte multi-madre"
         ]
     }

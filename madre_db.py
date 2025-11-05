@@ -96,6 +96,59 @@ def init_database():
             )
         ''')
         
+        # Tabla de mensajes
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                from_user TEXT NOT NULL,
+                to_user TEXT NOT NULL,
+                subject TEXT,
+                body TEXT NOT NULL,
+                sent_date TEXT NOT NULL,
+                read_date TEXT,
+                is_read INTEGER DEFAULT 0,
+                parent_message_id INTEGER,
+                FOREIGN KEY (parent_message_id) REFERENCES messages(id)
+            )
+        ''')
+        
+        # Tabla de adjuntos de mensajes
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS message_attachments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message_id INTEGER NOT NULL,
+                filename TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                file_size INTEGER NOT NULL,
+                upload_date TEXT NOT NULL,
+                FOREIGN KEY (message_id) REFERENCES messages(id)
+            )
+        ''')
+        
+        # Tabla de mensajes de chat en vivo
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                from_user TEXT NOT NULL,
+                to_user TEXT NOT NULL,
+                message TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                is_read INTEGER DEFAULT 0
+            )
+        ''')
+        
+        # Tabla de servidores madre para sincronización multi-madre
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS madre_servers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                server_name TEXT UNIQUE NOT NULL,
+                server_url TEXT NOT NULL,
+                is_active INTEGER DEFAULT 1,
+                last_sync TEXT,
+                sync_token TEXT
+            )
+        ''')
+        
         conn.commit()
         conn.close()
 
@@ -381,6 +434,288 @@ def update_sync_data(contenido: str, version: str = None) -> bool:
         conn.commit()
         conn.close()
         return True
+
+# ============================================================================
+# FUNCIONES DE MENSAJERÍA
+# ============================================================================
+
+def send_message(from_user: str, to_user: str, subject: str, body: str, 
+                 parent_message_id: Optional[int] = None) -> Optional[int]:
+    """Envía un mensaje. Retorna el ID del mensaje creado."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        sent_date = datetime.now().isoformat()
+        cursor.execute('''
+            INSERT INTO messages (from_user, to_user, subject, body, sent_date, parent_message_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (from_user, to_user, subject, body, sent_date, parent_message_id))
+        
+        message_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return message_id
+
+def add_message_attachment(message_id: int, filename: str, file_path: str, file_size: int) -> bool:
+    """Añade un adjunto a un mensaje."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        upload_date = datetime.now().isoformat()
+        cursor.execute('''
+            INSERT INTO message_attachments (message_id, filename, file_path, file_size, upload_date)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (message_id, filename, file_path, file_size, upload_date))
+        
+        conn.commit()
+        conn.close()
+        return True
+
+def get_user_messages(username: str, include_read: bool = True) -> List[Dict[str, Any]]:
+    """Obtiene todos los mensajes de un usuario (recibidos)."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        if include_read:
+            cursor.execute('''
+                SELECT * FROM messages 
+                WHERE to_user = ? 
+                ORDER BY sent_date DESC
+            ''', (username,))
+        else:
+            cursor.execute('''
+                SELECT * FROM messages 
+                WHERE to_user = ? AND is_read = 0 
+                ORDER BY sent_date DESC
+            ''', (username,))
+        
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+def get_message_by_id(message_id: int) -> Optional[Dict[str, Any]]:
+    """Obtiene un mensaje específico."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM messages WHERE id = ?', (message_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return dict(row)
+        return None
+
+def mark_message_read(message_id: int) -> bool:
+    """Marca un mensaje como leído."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        read_date = datetime.now().isoformat()
+        cursor.execute('''
+            UPDATE messages SET is_read = 1, read_date = ? WHERE id = ?
+        ''', (read_date, message_id))
+        
+        conn.commit()
+        success = cursor.rowcount > 0
+        conn.close()
+        return success
+
+def delete_message(message_id: int) -> bool:
+    """Elimina un mensaje."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Primero eliminar adjuntos
+        cursor.execute('DELETE FROM message_attachments WHERE message_id = ?', (message_id,))
+        # Luego eliminar mensaje
+        cursor.execute('DELETE FROM messages WHERE id = ?', (message_id,))
+        
+        conn.commit()
+        success = cursor.rowcount > 0
+        conn.close()
+        return success
+
+def get_message_attachments(message_id: int) -> List[Dict[str, Any]]:
+    """Obtiene los adjuntos de un mensaje."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT * FROM message_attachments 
+            WHERE message_id = ? 
+            ORDER BY upload_date
+        ''', (message_id,))
+        
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+def count_unread_messages(username: str) -> int:
+    """Cuenta los mensajes no leídos de un usuario."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT COUNT(*) as count FROM messages 
+            WHERE to_user = ? AND is_read = 0
+        ''', (username,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        return row['count'] if row else 0
+
+def export_message_to_txt(message_id: int, output_path: str) -> bool:
+    """Exporta un mensaje a archivo .txt."""
+    message = get_message_by_id(message_id)
+    if not message:
+        return False
+    
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(f"De: {message['from_user']}\n")
+            f.write(f"Para: {message['to_user']}\n")
+            f.write(f"Asunto: {message['subject']}\n")
+            f.write(f"Fecha: {message['sent_date']}\n")
+            f.write(f"\n{'-'*60}\n\n")
+            f.write(message['body'])
+            f.write(f"\n\n{'-'*60}\n")
+            
+            attachments = get_message_attachments(message_id)
+            if attachments:
+                f.write(f"\nAdjuntos ({len(attachments)}):\n")
+                for att in attachments:
+                    f.write(f"  - {att['filename']} ({att['file_size']} bytes)\n")
+        
+        return True
+    except Exception as e:
+        print(f"Error exportando mensaje: {e}")
+        return False
+
+# ============================================================================
+# FUNCIONES DE CHAT EN VIVO
+# ============================================================================
+
+def send_chat_message(from_user: str, to_user: str, message: str) -> Optional[int]:
+    """Envía un mensaje de chat en vivo."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        timestamp = datetime.now().isoformat()
+        cursor.execute('''
+            INSERT INTO chat_messages (from_user, to_user, message, timestamp)
+            VALUES (?, ?, ?, ?)
+        ''', (from_user, to_user, message, timestamp))
+        
+        chat_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return chat_id
+
+def get_chat_history(user1: str, user2: str, limit: int = 50) -> List[Dict[str, Any]]:
+    """Obtiene el historial de chat entre dos usuarios."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT * FROM chat_messages 
+            WHERE (from_user = ? AND to_user = ?) OR (from_user = ? AND to_user = ?)
+            ORDER BY timestamp DESC
+            LIMIT ?
+        ''', (user1, user2, user2, user1, limit))
+        
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in reversed(rows)]
+
+def mark_chat_messages_read(from_user: str, to_user: str) -> bool:
+    """Marca los mensajes de chat como leídos."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE chat_messages SET is_read = 1 
+            WHERE from_user = ? AND to_user = ? AND is_read = 0
+        ''', (from_user, to_user))
+        
+        conn.commit()
+        conn.close()
+        return True
+
+def count_unread_chat_messages(username: str) -> int:
+    """Cuenta los mensajes de chat no leídos para un usuario."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT COUNT(*) as count FROM chat_messages 
+            WHERE to_user = ? AND is_read = 0
+        ''', (username,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        return row['count'] if row else 0
+
+# ============================================================================
+# FUNCIONES DE MULTI-MADRE (SINCRONIZACIÓN ENTRE SERVIDORES)
+# ============================================================================
+
+def add_madre_server(server_name: str, server_url: str, sync_token: str = "") -> bool:
+    """Añade un servidor Madre para sincronización."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO madre_servers (server_name, server_url, sync_token)
+                VALUES (?, ?, ?)
+            ''', (server_name, server_url, sync_token))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+def get_all_madre_servers() -> List[Dict[str, Any]]:
+    """Obtiene todos los servidores Madre registrados."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM madre_servers WHERE is_active = 1')
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+def update_madre_server_sync(server_name: str) -> bool:
+    """Actualiza la última sincronización de un servidor Madre."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        last_sync = datetime.now().isoformat()
+        cursor.execute('''
+            UPDATE madre_servers SET last_sync = ? WHERE server_name = ?
+        ''', (last_sync, server_name))
+        
+        conn.commit()
+        success = cursor.rowcount > 0
+        conn.close()
+        return success
 
 # Inicializar la base de datos al importar el módulo
 init_database()

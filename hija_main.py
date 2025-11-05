@@ -135,14 +135,20 @@ class AppHija(customtkinter.CTk):
         self.title(f"Aplicación Hija - {nombre}")
         self.geometry("900x700")
         
-        # Instanciar el MainAppFrame
+        # Instanciar el MainAppFrame con callbacks para mensajería y chat
         self._current_frame = MainAppFrame(
             master=self,
             username=self.current_username,
             user_data=self.current_user_data,
-            on_sync_attempt=self._intentar_sync
+            on_sync_attempt=self._intentar_sync,
+            on_send_message=self._enviar_mensaje,
+            on_send_chat=self._enviar_chat
         )
         self._current_frame.pack(fill="both", expand=True)
+        
+        # Cargar mensajes y chat inicial
+        self._cargar_mensajes()
+        self._cargar_chat()
         
         # Iniciar sincronización automática en segundo plano
         self._iniciar_sync_automatica()
@@ -249,6 +255,67 @@ class AppHija(customtkinter.CTk):
                 
         except Exception as e:
             print(f"Excepción en sincronización automática: {e}")
+    
+    def _enviar_mensaje(self, to_user: str, subject: str, body: str):
+        """Envía un mensaje a otro usuario."""
+        if not isinstance(self._current_frame, MainAppFrame):
+            return
+        
+        success, data = self.communicator.send_message(to_user, subject, body)
+        
+        if success:
+            self._current_frame.lbl_status.configure(
+                text=f"✓ Mensaje enviado a {to_user}"
+            )
+            # Recargar mensajes
+            self._cargar_mensajes()
+        else:
+            error_msg = data.get("error", "Error desconocido")
+            self._current_frame.lbl_status.configure(
+                text=f"✗ Error enviando mensaje: {error_msg}"
+            )
+    
+    def _enviar_chat(self, to_user: str, message: str):
+        """Envía un mensaje de chat en vivo."""
+        if not isinstance(self._current_frame, MainAppFrame):
+            return
+        
+        success, data = self.communicator.send_chat_message(to_user, message)
+        
+        if success:
+            # Recargar chat
+            self._cargar_chat()
+        else:
+            error_msg = data.get("error", "Error desconocido")
+            self._current_frame.lbl_status.configure(
+                text=f"✗ Error enviando chat: {error_msg}"
+            )
+    
+    def _cargar_mensajes(self):
+        """Carga los mensajes del usuario."""
+        if not isinstance(self._current_frame, MainAppFrame):
+            return
+        
+        success, data = self.communicator.get_messages()
+        
+        if success:
+            messages = data.get('mensajes', [])
+            self._current_frame.update_message_list(messages)
+        else:
+            print(f"Error cargando mensajes: {data.get('error', 'Desconocido')}")
+    
+    def _cargar_chat(self):
+        """Carga el historial de chat."""
+        if not isinstance(self._current_frame, MainAppFrame):
+            return
+        
+        success, data = self.communicator.get_chat_history("admin")
+        
+        if success:
+            messages = data.get('mensajes', [])
+            self._current_frame.update_chat_history(messages)
+        else:
+            print(f"Error cargando chat: {data.get('error', 'Desconocido')}")
     
     def destroy(self):
         """

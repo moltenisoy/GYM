@@ -180,3 +180,172 @@ class APICommunicator:
             
         except Exception as e:
             return False, {"error": f"Error inesperado: {e}"}
+    
+    # ============================================================================
+    # FUNCIONES DE MENSAJERÍA
+    # ============================================================================
+    
+    def send_message(self, to_user: str, subject: str, body: str, 
+                     parent_message_id: Optional[int] = None) -> Tuple[bool, dict]:
+        """Envía un mensaje."""
+        url = f"{self.base_url}/enviar_mensaje"
+        
+        # Obtener username actual de credenciales
+        creds = self.load_credentials()
+        from_user = creds.get('username', 'unknown') if creds else 'unknown'
+        
+        payload = {
+            "from_user": from_user,
+            "to_user": to_user,
+            "subject": subject,
+            "body": body,
+            "parent_message_id": parent_message_id
+        }
+        
+        try:
+            response = self.session.post(url, json=payload, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            return True, data
+        
+        except requests.exceptions.HTTPError as e:
+            try:
+                error_detail = e.response.json().get("detail", "Error de servidor")
+                return False, {"error": f"Error: {error_detail}"}
+            except json.JSONDecodeError:
+                return False, {"error": f"Error HTTP {e.response.status_code}"}
+        
+        except requests.exceptions.ConnectionError:
+            return False, {"error": "Error de conexión"}
+        
+        except Exception as e:
+            return False, {"error": f"Error: {e}"}
+    
+    def get_messages(self, solo_no_leidos: bool = False) -> Tuple[bool, dict]:
+        """Obtiene los mensajes del usuario."""
+        url = f"{self.base_url}/obtener_mensajes"
+        
+        # Obtener username actual de credenciales
+        creds = self.load_credentials()
+        username = creds.get('username', '') if creds else ''
+        
+        if not username:
+            return False, {"error": "Usuario no identificado"}
+        
+        params = {
+            "usuario": username,
+            "solo_no_leidos": solo_no_leidos
+        }
+        
+        try:
+            response = self.session.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            return True, data
+        
+        except requests.exceptions.HTTPError as e:
+            try:
+                error_detail = e.response.json().get("detail", "Error de servidor")
+                return False, {"error": f"Error: {error_detail}"}
+            except json.JSONDecodeError:
+                return False, {"error": f"Error HTTP {e.response.status_code}"}
+        
+        except requests.exceptions.ConnectionError:
+            return False, {"error": "Error de conexión"}
+        
+        except Exception as e:
+            return False, {"error": f"Error: {e}"}
+    
+    def mark_message_read(self, message_id: int) -> Tuple[bool, dict]:
+        """Marca un mensaje como leído."""
+        url = f"{self.base_url}/marcar_leido/{message_id}"
+        
+        try:
+            response = self.session.post(url, timeout=5)
+            response.raise_for_status()
+            
+            data = response.json()
+            return True, data
+        
+        except Exception as e:
+            return False, {"error": f"Error: {e}"}
+    
+    def count_unread_messages(self) -> Tuple[bool, int]:
+        """Cuenta los mensajes no leídos."""
+        url = f"{self.base_url}/contar_no_leidos"
+        
+        # Obtener username actual de credenciales
+        creds = self.load_credentials()
+        username = creds.get('username', '') if creds else ''
+        
+        if not username:
+            return False, 0
+        
+        params = {"usuario": username}
+        
+        try:
+            response = self.session.get(url, params=params, timeout=5)
+            response.raise_for_status()
+            
+            data = response.json()
+            return True, data.get('mensajes_no_leidos', 0)
+        
+        except Exception:
+            return False, 0
+    
+    # ============================================================================
+    # FUNCIONES DE CHAT EN VIVO
+    # ============================================================================
+    
+    def send_chat_message(self, to_user: str, message: str) -> Tuple[bool, dict]:
+        """Envía un mensaje de chat en vivo."""
+        url = f"{self.base_url}/enviar_chat"
+        
+        # Obtener username actual de credenciales
+        creds = self.load_credentials()
+        from_user = creds.get('username', 'unknown') if creds else 'unknown'
+        
+        payload = {
+            "from_user": from_user,
+            "to_user": to_user,
+            "message": message
+        }
+        
+        try:
+            response = self.session.post(url, json=payload, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            return True, data
+        
+        except Exception as e:
+            return False, {"error": f"Error: {e}"}
+    
+    def get_chat_history(self, other_user: str, limit: int = 50) -> Tuple[bool, dict]:
+        """Obtiene el historial de chat con otro usuario."""
+        url = f"{self.base_url}/obtener_chat"
+        
+        # Obtener username actual de credenciales
+        creds = self.load_credentials()
+        username = creds.get('username', '') if creds else ''
+        
+        if not username:
+            return False, {"error": "Usuario no identificado"}
+        
+        params = {
+            "user1": username,
+            "user2": other_user,
+            "limit": limit
+        }
+        
+        try:
+            response = self.session.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            return True, data
+        
+        except Exception as e:
+            return False, {"error": f"Error: {e}"}
