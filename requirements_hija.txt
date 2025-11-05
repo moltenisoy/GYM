@@ -1,0 +1,5 @@
+# Requisitos para la Aplicación Hija
+# Instalar con: pip install -r requirements_hija.txt
+
+requests>=2.31.0
+customtkinter>=5.2.0
