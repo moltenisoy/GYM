@@ -90,11 +90,15 @@ python hija_main.py
 
 | Usuario | Contraseña | Estado Inicial | Equipo |
 |---------|-----------|---------------|--------|
-| usuario_alfa | N/A | ✅ Habilitado | Equipo A |
-| usuario_beta | N/A | ✅ Habilitado | Equipo B |
-| usuario_gamma | N/A | ❌ Deshabilitado | Equipo C |
+| `juan_perez` | `gym2024` | ✅ Habilitado | Equipo A - Fitness Avanzado |
+| `maria_lopez` | `fit2024` | ✅ Habilitado | Equipo B - Cardio y Resistencia |
+| `carlos_rodriguez` | `trainer123` | ❌ **BLOQUEADO** | Equipo C - Principiantes |
 
-**Nota**: Esta es una versión de prueba sin contraseñas. Solo se requiere el nombre de usuario.
+**⚠️ IMPORTANTE**: Antes de usar el sistema, ejecutar:
+```bash
+python populate_db.py
+```
+Esto creará la base de datos y los usuarios de prueba con todos sus datos.
 
 ## 🔧 Resolución de Problemas
 

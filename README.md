@@ -91,29 +91,48 @@ python hija_main.py
 
 ## Usuarios Predefinidos
 
-La aplicación incluye tres usuarios de prueba:
+La aplicación incluye tres usuarios de prueba con **datos completos**:
 
-| Usuario | Permiso de Acceso | Datos Adicionales |
-|---------|-------------------|-------------------|
-| usuario_alfa | ✓ Habilitado | Equipo A |
-| usuario_beta | ✓ Habilitado | Equipo B |
-| usuario_gamma | ✗ Deshabilitado | Equipo C |
+| Usuario | Contraseña | Permiso | Equipo |
+|---------|-----------|---------|--------|
+| `juan_perez` | `gym2024` | ✅ Habilitado | Equipo A - Fitness Avanzado |
+| `maria_lopez` | `fit2024` | ✅ Habilitado | Equipo B - Cardio y Resistencia |
+| `carlos_rodriguez` | `trainer123` | ❌ **BLOQUEADO** | Equipo C - Principiantes |
+
+**Cada usuario incluye:**
+- Foto de perfil
+- Datos personales completos (email, teléfono, equipo)
+- Cronograma de entrenamiento mensual detallado
+- Galería de fotos personal con descripciones
+
+> 💡 **Nota**: Para crear los usuarios y poblar la base de datos, ejecutar: `python populate_db.py`
 
 ## Características Principales
 
 ### Aplicación Madre
 - ✅ Panel de gestión con pestañas
+- ✅ **Base de datos SQLite persistente** (NUEVO)
 - ✅ Gestión de permisos de usuarios en tiempo real
+- ✅ **Gestión individual de usuarios con detalles completos** (NUEVO)
+- ✅ **Sincronización masiva de múltiples usuarios** (NUEVO)
 - ✅ Publicación de contenido para sincronización
 - ✅ Servidor API REST concurrente
 - ✅ Interfaz gráfica moderna y responsiva
 
 ### Aplicación Hija
-- ✅ Autenticación contra servidor Madre
+- ✅ **Autenticación con contraseña** (NUEVO)
+- ✅ **Auto-login con credenciales guardadas** (NUEVO)
+- ✅ **Validación de sincronización cada 72 horas** (NUEVO)
+- ✅ **Sincronización automática en segundo plano** (NUEVO)
+  - Cada 5 minutos inicialmente
+  - Cada 30 minutos tras primera sync exitosa
+- ✅ **Interfaz con pestañas**: Perfil, Cronograma, Galería, Mensajes (NUEVO)
 - ✅ Interfaz de inicio de sesión intuitiva
 - ✅ Sincronización de contenido desde la Madre
 - ✅ Manejo robusto de errores de conexión
 - ✅ Diseño modular y escalable
+
+> 📖 **Ver documentación completa de nuevas funcionalidades en** [`NUEVAS_FUNCIONALIDADES.md`](NUEVAS_FUNCIONALIDADES.md)
 
 ## Arquitectura Técnica
 
@@ -157,13 +176,22 @@ El ejecutable estará en la carpeta `dist/`
 
 ## Seguridad
 
-⚠️ **ADVERTENCIA**: Este es un prototipo funcional (POC). No está listo para producción:
-- Los usuarios están en texto plano
-- No hay contraseñas
-- La comunicación no está cifrada
-- La base de datos es en memoria y se pierde al cerrar
+### Implementaciones Actuales ✅
+- ✅ Contraseñas con hash SHA256
+- ✅ Base de datos persistente (SQLite)
+- ✅ Validación de permisos en servidor
+- ✅ Validación de sincronización (72 horas)
+- ✅ Thread-safety en operaciones de BD
 
-Para uso en producción, implementa las extensiones de seguridad mencionadas.
+### Mejoras Recomendadas para Producción ⚠️
+- 🔒 Migrar a bcrypt/argon2 para contraseñas
+- 🔒 Implementar JWT para sesiones
+- 🔐 Añadir comunicación HTTPS/SSL
+- 🔐 Usar keyring para credenciales locales
+- 🔒 Implementar rate limiting en API
+- 🔐 Migrar a PostgreSQL con SSL
+
+> ⚠️ **ADVERTENCIA**: Si bien el sistema incluye seguridad básica, se recomienda implementar las mejoras listadas antes de usar en producción.
 
 ## Soporte
 
