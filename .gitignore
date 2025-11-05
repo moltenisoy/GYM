@@ -40,3 +40,7 @@ venv.bak/
 # OS
 .DS_Store
 Thumbs.db
+
+# Application Data
+data/gym_database.db
+data/hija_local/
