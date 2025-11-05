@@ -32,7 +32,8 @@ async def autorizar_usuario(auth_request: AuthRequest):
     usuario = auth_request.username
     
     if usuario in madre_db.USER_DB:
-        if madre_db.USER_DB[usuario].get("permiso_acceso", False):
+        user_data = madre_db.USER_DB[usuario]
+        if isinstance(user_data, dict) and user_data.get("permiso_acceso", False):
             # Usuario encontrado y con permiso
             return {"status": "aprobado", "usuario": usuario}
         else:

@@ -107,7 +107,8 @@ class AppHija(customtkinter.CTk):
         Usa el 'communicator' para obtener datos de sincronización.
         """
         if not self.current_username:
-            print("Error crítico: Intento de sincronización sin usuario logueado.")
+            if isinstance(self._current_frame, MainAppFrame):
+                self._current_frame.show_sync_error("Error: No hay usuario autenticado.")
             return
             
         success, data = self.communicator.fetch_sync_data(self.current_username)

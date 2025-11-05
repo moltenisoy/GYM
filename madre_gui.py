@@ -123,11 +123,15 @@ class Dashboard(customtkinter.CTkTabview):
         madre_db.SYNC_DATA["contenido"] = nuevo_contenido
         # Actualizar la versión (lógica simple de ejemplo)
         try:
-            version_actual = float(madre_db.SYNC_DATA["metadatos_version"])
-            nueva_version = version_actual + 0.1
-            madre_db.SYNC_DATA["metadatos_version"] = f"{nueva_version:.1f}"
-        except ValueError:
-            madre_db.SYNC_DATA["metadatos_version"] = "1.0"
+            version_parts = madre_db.SYNC_DATA["metadatos_version"].split('.')
+            if len(version_parts) >= 2:
+                major, minor = int(version_parts[0]), int(version_parts[1])
+                minor += 1
+                madre_db.SYNC_DATA["metadatos_version"] = f"{major}.{minor}.0"
+            else:
+                madre_db.SYNC_DATA["metadatos_version"] = "1.1.0"
+        except (ValueError, IndexError):
+            madre_db.SYNC_DATA["metadatos_version"] = "1.0.0"
             
         print(f"Nuevos datos de sincronización publicados. Versión: {madre_db.SYNC_DATA['metadatos_version']}")
         

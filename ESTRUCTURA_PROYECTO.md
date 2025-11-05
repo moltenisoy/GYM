@@ -172,7 +172,7 @@ GYM/
 
 ### Aplicación Madre
 ```
-fastapi>=0.104.0        # Framework API REST
+fastapi>=0.109.1        # Framework API REST (versión segura)
 uvicorn[standard]>=0.24.0  # Servidor ASGI
 pydantic>=2.4.0         # Validación de datos
 customtkinter>=5.2.0    # GUI moderna
