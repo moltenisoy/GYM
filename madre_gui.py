@@ -147,6 +147,88 @@ class UserDetailWindow(customtkinter.CTkToplevel):
         )
         btn_close.pack(pady=10)
 
+class MessageDetailWindow(customtkinter.CTkToplevel):
+    """
+    Ventana emergente para ver detalles de un mensaje.
+    """
+    def __init__(self, master, message: dict, **kwargs):
+        super().__init__(master, **kwargs)
+        
+        self.message = message
+        self.title(f"Mensaje de {message.get('from_user', 'Desconocido')}")
+        self.geometry("700x500")
+        
+        # Frame principal con scroll
+        main_frame = customtkinter.CTkScrollableFrame(self)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Información del mensaje
+        lbl_from = customtkinter.CTkLabel(
+            main_frame,
+            text=f"De: {message.get('from_user', 'Desconocido')}",
+            font=customtkinter.CTkFont(size=14, weight="bold"),
+            anchor="w"
+        )
+        lbl_from.pack(fill="x", pady=3)
+        
+        lbl_to = customtkinter.CTkLabel(
+            main_frame,
+            text=f"Para: {message.get('to_user', 'Desconocido')}",
+            anchor="w"
+        )
+        lbl_to.pack(fill="x", pady=3)
+        
+        lbl_date = customtkinter.CTkLabel(
+            main_frame,
+            text=f"Fecha: {message.get('sent_date', 'N/A')}",
+            anchor="w"
+        )
+        lbl_date.pack(fill="x", pady=3)
+        
+        lbl_subject = customtkinter.CTkLabel(
+            main_frame,
+            text=f"Asunto: {message.get('subject', 'Sin asunto')}",
+            font=customtkinter.CTkFont(size=14, weight="bold"),
+            anchor="w"
+        )
+        lbl_subject.pack(fill="x", pady=10)
+        
+        # Cuerpo del mensaje
+        textbox = customtkinter.CTkTextbox(main_frame, height=250)
+        textbox.pack(fill="both", expand=True, pady=10)
+        textbox.insert("1.0", message.get('body', ''))
+        textbox.configure(state="disabled")
+        
+        # Adjuntos
+        attachments = madre_db.get_message_attachments(message['id'])
+        if attachments:
+            lbl_attachments = customtkinter.CTkLabel(
+                main_frame,
+                text=f"📎 Adjuntos ({len(attachments)}):",
+                font=customtkinter.CTkFont(weight="bold"),
+                anchor="w"
+            )
+            lbl_attachments.pack(fill="x", pady=5)
+            
+            for att in attachments:
+                att_frame = customtkinter.CTkFrame(main_frame)
+                att_frame.pack(fill="x", padx=5, pady=2)
+                
+                lbl_att = customtkinter.CTkLabel(
+                    att_frame,
+                    text=f"📄 {att['filename']} ({att['file_size']} bytes)",
+                    anchor="w"
+                )
+                lbl_att.pack(side="left", padx=10, pady=5)
+        
+        # Botón cerrar
+        btn_close = customtkinter.CTkButton(
+            main_frame,
+            text="Cerrar",
+            command=self.destroy
+        )
+        btn_close.pack(pady=10)
+
 class Dashboard(customtkinter.CTkTabview):
     """
     Panel de control principal, implementado como un CTkTabview.
@@ -159,11 +241,13 @@ class Dashboard(customtkinter.CTkTabview):
         self.add("Gestión de Usuarios")
         self.add("Sincronización de Contenido")
         self.add("Sincronización Masiva")
+        self.add("Buzón de Mensajes")
         
         # Poblar cada pestaña
         self._crear_pestaña_usuarios()
         self._crear_pestaña_sincronizacion()
         self._crear_pestaña_sync_masiva()
+        self._crear_pestaña_mensajes()
 
     def _crear_pestaña_usuarios(self):
         """Puebla la pestaña 'Gestión de Usuarios'."""
@@ -454,7 +538,235 @@ class Dashboard(customtkinter.CTkTabview):
         self.lbl_version.configure(text=f"Versión actual: {nueva_version}")
         
         print(f"Nuevos datos de sincronización publicados. Versión: {nueva_version}")
+    
+    def _crear_pestaña_mensajes(self):
+        """Puebla la pestaña 'Buzón de Mensajes'."""
+        tab_mensajes = self.tab("Buzón de Mensajes")
+        tab_mensajes.grid_columnconfigure(0, weight=1)
+        tab_mensajes.grid_rowconfigure(1, weight=1)
         
+        # Header con contador de no leídos
+        header_frame = customtkinter.CTkFrame(tab_mensajes)
+        header_frame.grid(row=0, column=0, padx=20, pady=10, sticky="ew")
+        
+        lbl_titulo = customtkinter.CTkLabel(
+            header_frame,
+            text="✉️ Buzón de Mensajes",
+            font=customtkinter.CTkFont(size=16, weight="bold")
+        )
+        lbl_titulo.pack(side="left", padx=10)
+        
+        self.lbl_unread_count = customtkinter.CTkLabel(
+            header_frame,
+            text="📬 0 no leídos",
+            font=customtkinter.CTkFont(size=14),
+            text_color="orange"
+        )
+        self.lbl_unread_count.pack(side="left", padx=20)
+        
+        btn_actualizar = customtkinter.CTkButton(
+            header_frame,
+            text="🔄 Actualizar",
+            command=self._actualizar_mensajes,
+            width=120
+        )
+        btn_actualizar.pack(side="right", padx=10)
+        
+        # Lista de mensajes
+        self.scrollable_mensajes = customtkinter.CTkScrollableFrame(tab_mensajes)
+        self.scrollable_mensajes.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
+        
+        # Cargar mensajes inicial
+        self._actualizar_mensajes()
+    
+    def _actualizar_mensajes(self):
+        """Actualiza la lista de mensajes del admin."""
+        for widget in self.scrollable_mensajes.winfo_children():
+            widget.destroy()
+        
+        # Obtener mensajes para "admin"
+        messages = madre_db.get_user_messages("admin", include_read=True)
+        unread_count = madre_db.count_unread_messages("admin")
+        
+        # Actualizar contador
+        self.lbl_unread_count.configure(text=f"📬 {unread_count} no leídos")
+        
+        if not messages:
+            lbl_no_msg = customtkinter.CTkLabel(
+                self.scrollable_mensajes,
+                text="No hay mensajes en el buzón"
+            )
+            lbl_no_msg.pack(pady=20)
+            return
+        
+        for msg in messages:
+            msg_frame = customtkinter.CTkFrame(self.scrollable_mensajes)
+            msg_frame.grid_columnconfigure(1, weight=1)
+            msg_frame.pack(fill="x", padx=5, pady=5)
+            
+            # Indicador de leído/no leído
+            indicator = "●" if not msg.get('is_read') else "○"
+            color = "#2563eb" if not msg.get('is_read') else "gray"
+            
+            lbl_indicator = customtkinter.CTkLabel(
+                msg_frame,
+                text=indicator,
+                text_color=color,
+                width=20
+            )
+            lbl_indicator.grid(row=0, column=0, padx=5, pady=5)
+            
+            # Info del mensaje
+            info_frame = customtkinter.CTkFrame(msg_frame, fg_color="transparent")
+            info_frame.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+            
+            lbl_from = customtkinter.CTkLabel(
+                info_frame,
+                text=f"De: {msg.get('from_user', 'Desconocido')} - {msg.get('subject', 'Sin asunto')}",
+                font=customtkinter.CTkFont(weight="bold" if not msg.get('is_read') else "normal"),
+                anchor="w"
+            )
+            lbl_from.pack(side="left", fill="x", expand=True)
+            
+            lbl_date = customtkinter.CTkLabel(
+                info_frame,
+                text=msg.get('sent_date', '')[:16],
+                text_color="gray"
+            )
+            lbl_date.pack(side="right", padx=5)
+            
+            # Botones de acción
+            btn_frame = customtkinter.CTkFrame(msg_frame, fg_color="transparent")
+            btn_frame.grid(row=0, column=2, padx=5, pady=5)
+            
+            btn_ver = customtkinter.CTkButton(
+                btn_frame,
+                text="Ver",
+                width=60,
+                command=lambda m=msg: self._ver_mensaje(m)
+            )
+            btn_ver.pack(side="left", padx=2)
+            
+            btn_responder = customtkinter.CTkButton(
+                btn_frame,
+                text="Responder",
+                width=80,
+                command=lambda m=msg: self._responder_mensaje(m),
+                fg_color="green"
+            )
+            btn_responder.pack(side="left", padx=2)
+            
+            btn_exportar = customtkinter.CTkButton(
+                btn_frame,
+                text="Exportar",
+                width=80,
+                command=lambda m=msg: self._exportar_mensaje(m),
+                fg_color="orange"
+            )
+            btn_exportar.pack(side="left", padx=2)
+            
+            btn_eliminar = customtkinter.CTkButton(
+                btn_frame,
+                text="Eliminar",
+                width=70,
+                command=lambda m=msg: self._eliminar_mensaje(m),
+                fg_color="red"
+            )
+            btn_eliminar.pack(side="left", padx=2)
+    
+    def _ver_mensaje(self, msg: dict):
+        """Muestra los detalles de un mensaje en una ventana emergente."""
+        # Marcar como leído
+        madre_db.mark_message_read(msg['id'])
+        
+        # Crear ventana emergente
+        dialog = MessageDetailWindow(self, msg)
+        
+        # Actualizar lista después de cerrar
+        dialog.protocol("WM_DELETE_WINDOW", lambda: self._cerrar_mensaje_dialog(dialog))
+    
+    def _cerrar_mensaje_dialog(self, dialog):
+        """Cierra el diálogo y actualiza la lista de mensajes."""
+        dialog.destroy()
+        self._actualizar_mensajes()
+    
+    def _responder_mensaje(self, msg: dict):
+        """Abre un diálogo para responder un mensaje."""
+        dialog = customtkinter.CTkToplevel(self)
+        dialog.title(f"Responder a {msg.get('from_user', 'Desconocido')}")
+        dialog.geometry("600x400")
+        
+        # Frame de contenido
+        content_frame = customtkinter.CTkFrame(dialog)
+        content_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        content_frame.grid_columnconfigure(0, weight=1)
+        content_frame.grid_rowconfigure(2, weight=1)
+        
+        lbl_to = customtkinter.CTkLabel(
+            content_frame,
+            text=f"Para: {msg.get('from_user', 'Desconocido')}",
+            font=customtkinter.CTkFont(weight="bold")
+        )
+        lbl_to.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+        
+        entry_subject = customtkinter.CTkEntry(
+            content_frame,
+            placeholder_text="Asunto"
+        )
+        entry_subject.insert(0, f"Re: {msg.get('subject', '')}")
+        entry_subject.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        
+        textbox_body = customtkinter.CTkTextbox(content_frame)
+        textbox_body.grid(row=2, column=0, padx=10, pady=5, sticky="nsew")
+        
+        btn_enviar = customtkinter.CTkButton(
+            content_frame,
+            text="Enviar Respuesta",
+            command=lambda: self._enviar_respuesta(
+                dialog, 
+                msg.get('from_user', ''), 
+                entry_subject.get(), 
+                textbox_body.get("1.0", "end-1c"),
+                msg.get('id')
+            ),
+            fg_color="green"
+        )
+        btn_enviar.grid(row=3, column=0, padx=10, pady=10)
+    
+    def _enviar_respuesta(self, dialog, to_user, subject, body, parent_id):
+        """Envía una respuesta a un mensaje."""
+        if not to_user or not body.strip():
+            return
+        
+        # Enviar mensaje
+        madre_db.send_message("admin", to_user, subject, body, parent_id)
+        
+        dialog.destroy()
+        self._actualizar_mensajes()
+    
+    def _exportar_mensaje(self, msg: dict):
+        """Exporta un mensaje a archivo .txt."""
+        import tkinter.filedialog as filedialog
+        
+        # Pedir ruta de archivo
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+            initialfile=f"mensaje_{msg['id']}.txt"
+        )
+        
+        if filename:
+            success = madre_db.export_message_to_txt(msg['id'], filename)
+            if success:
+                # Mostrar confirmación
+                print(f"Mensaje exportado a: {filename}")
+    
+    def _eliminar_mensaje(self, msg: dict):
+        """Elimina un mensaje."""
+        # Confirmar eliminación (simple - en producción usar un diálogo)
+        madre_db.delete_message(msg['id'])
+        self._actualizar_mensajes()
+
 
 class AppMadre(customtkinter.CTk):
     """
