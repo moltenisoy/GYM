@@ -6,8 +6,8 @@
 
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
+from typing import Optional
+from datetime import datetime
 
 # Importar la base de datos
 import madre_db
@@ -23,9 +23,12 @@ app = FastAPI(title="Servidor API de la Aplicación Madre", version=APP_VERSION)
 logger.info(f"FastAPI application initialized - Version {APP_VERSION}")
 
 # --- Modelos de Datos (Pydantic) ---
+
+
 class AuthRequest(BaseModel):
     username: str = Field(..., min_length=1, description="Nombre de usuario")
     password: str = Field(..., min_length=1, description="Contraseña del usuario")
+
 
 class UserUpdateRequest(BaseModel):
     username: str
@@ -33,43 +36,44 @@ class UserUpdateRequest(BaseModel):
 
 # --- Endpoints de la API ---
 
+
 @app.post("/autorizar", summary="Autoriza el inicio de sesión de una Aplicación Hija")
 async def autorizar_usuario(auth_request: AuthRequest):
     """
     Endpoint de autenticación con contraseña.
     Verifica credenciales y valida que el usuario tenga permiso de acceso.
-    
+
     Args:
         auth_request: Objeto con username y password
-    
+
     Returns:
         Dict con status, usuario, nombre_completo, equipo, last_sync
-    
+
     Raises:
         HTTPException: 401 si credenciales inválidas, 403 si acceso denegado
     """
     logger.info(f"Intento de autorización para usuario: {auth_request.username}")
-    
+
     # Autenticar usuario
     success, user_data = madre_db.authenticate_user(
-        auth_request.username, 
+        auth_request.username,
         auth_request.password
     )
-    
+
     if not success or not user_data:
         logger.warning(f"Credenciales inválidas para usuario: {auth_request.username}")
         raise HTTPException(status_code=401, detail="Credenciales inválidas.")
-    
+
     # Verificar permiso de acceso
     if not user_data.get('permiso_acceso'):
         logger.warning(f"Acceso denegado para usuario: {auth_request.username}")
         raise HTTPException(status_code=403, detail="Permiso de acceso denegado por el administrador.")
-    
+
     # Actualizar última sincronización
     madre_db.update_user_sync(auth_request.username)
-    
+
     logger.info(f"Autorización exitosa para usuario: {auth_request.username}")
-    
+
     # Retornar información del usuario
     return {
         "status": "aprobado",
@@ -79,6 +83,7 @@ async def autorizar_usuario(auth_request: AuthRequest):
         "last_sync": datetime.now().isoformat()
     }
 
+
 @app.get("/validar_sync", summary="Valida si el usuario necesita sincronizar")
 async def validar_sync(
     usuario: str = Query(..., description="Nombre de usuario")
@@ -86,23 +91,23 @@ async def validar_sync(
     """
     Valida si el usuario ha sincronizado en las últimas horas configuradas.
     Si no, debe bloquearse el acceso en la app Hija.
-    
+
     Args:
         usuario: Nombre de usuario a validar
-    
+
     Returns:
         Dict con requiere_sync, bloqueado, mensaje, horas_desde_sync
-    
+
     Raises:
         HTTPException: 404 si usuario no encontrado
     """
     logger.debug(f"Validando estado de sincronización para usuario: {usuario}")
-    
+
     user = madre_db.get_user(usuario)
     if not user:
         logger.warning(f"Usuario no encontrado en validación de sync: {usuario}")
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
-    
+
     last_sync_str = user.get('last_sync')
     if not last_sync_str:
         logger.info(f"Primera sincronización requerida para: {usuario}")
@@ -111,12 +116,12 @@ async def validar_sync(
             "bloqueado": True,
             "mensaje": "Primera sincronización requerida"
         }
-    
+
     try:
         last_sync = datetime.fromisoformat(last_sync_str)
         tiempo_desde_sync = datetime.now() - last_sync
         horas_desde_sync = tiempo_desde_sync.total_seconds() / 3600
-        
+
         if horas_desde_sync > SYNC_REQUIRED_HOURS:
             logger.warning(f"Sincronización requerida para {usuario}: {horas_desde_sync:.1f} horas desde última sync")
             return {
@@ -141,6 +146,7 @@ async def validar_sync(
             "mensaje": "Error al validar sincronización"
         }
 
+
 @app.get("/sincronizar_datos", summary="Proporciona datos de sincronización completos a una Hija")
 async def obtener_datos_sync(
     usuario: str = Query(..., description="El nombre de usuario de la Hija que solicita los datos")
@@ -152,24 +158,24 @@ async def obtener_datos_sync(
     user = madre_db.get_user(usuario)
     if not user:
         raise HTTPException(status_code=404, detail="Usuario solicitante desconocido.")
-    
+
     user_id = user['id']
-    
+
     # Obtener foto de perfil
     profile_photo = madre_db.get_user_profile_photo(user_id)
-    
+
     # Obtener cronograma actual
     training_schedule = madre_db.get_training_schedule(user_id)
-    
+
     # Obtener galería de fotos
     photo_gallery = madre_db.get_photo_gallery(user_id)
-    
+
     # Obtener datos de sincronización global
     sync_data = madre_db.get_sync_data()
-    
+
     # Actualizar última sincronización
     madre_db.update_user_sync(usuario)
-    
+
     return {
         "status": "sincronizacion_exitosa",
         "timestamp": datetime.now().isoformat(),
@@ -187,6 +193,7 @@ async def obtener_datos_sync(
         "sync_content": sync_data
     }
 
+
 @app.post("/actualizar_permiso", summary="Actualiza el permiso de acceso de un usuario")
 async def actualizar_permiso(request: UserUpdateRequest):
     """
@@ -195,12 +202,13 @@ async def actualizar_permiso(request: UserUpdateRequest):
     success = madre_db.update_user_permission(request.username, request.permiso_acceso)
     if not success:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
-    
+
     return {
         "status": "actualizado",
         "usuario": request.username,
         "permiso_acceso": request.permiso_acceso
     }
+
 
 @app.post("/sincronizar_masiva", summary="Fuerza sincronización para múltiples usuarios")
 async def sincronizar_masiva(usernames: list[str]):
@@ -215,12 +223,13 @@ async def sincronizar_masiva(usernames: list[str]):
             "usuario": username,
             "actualizado": success
         })
-    
+
     return {
         "status": "sincronizacion_masiva_completada",
         "total": len(usernames),
         "resultados": resultados
     }
+
 
 @app.get("/usuarios", summary="Obtiene lista de todos los usuarios")
 async def obtener_usuarios():
@@ -232,7 +241,7 @@ async def obtener_usuarios():
     # Remover password_hash de la respuesta
     for user in usuarios:
         user.pop('password_hash', None)
-    
+
     return {
         "total": len(usuarios),
         "usuarios": usuarios
@@ -242,6 +251,7 @@ async def obtener_usuarios():
 # ENDPOINTS DE MENSAJERÍA
 # ============================================================================
 
+
 class MessageRequest(BaseModel):
     from_user: str
     to_user: str
@@ -249,10 +259,12 @@ class MessageRequest(BaseModel):
     body: str
     parent_message_id: Optional[int] = None
 
+
 class ChatMessageRequest(BaseModel):
     from_user: str
     to_user: str
     message: str
+
 
 @app.post("/enviar_mensaje", summary="Enviar mensaje")
 async def enviar_mensaje(request: MessageRequest):
@@ -264,7 +276,7 @@ async def enviar_mensaje(request: MessageRequest):
         request.body,
         request.parent_message_id
     )
-    
+
     if message_id:
         return {
             "status": "mensaje_enviado",
@@ -274,6 +286,7 @@ async def enviar_mensaje(request: MessageRequest):
     else:
         raise HTTPException(status_code=500, detail="Error al enviar mensaje")
 
+
 @app.get("/obtener_mensajes", summary="Obtener mensajes del usuario")
 async def obtener_mensajes(
     usuario: str = Query(..., description="Nombre de usuario"),
@@ -282,7 +295,7 @@ async def obtener_mensajes(
     """Endpoint para obtener mensajes de un usuario."""
     messages = madre_db.get_user_messages(usuario, include_read=not solo_no_leidos)
     unread_count = madre_db.count_unread_messages(usuario)
-    
+
     return {
         "status": "ok",
         "total_mensajes": len(messages),
@@ -290,20 +303,22 @@ async def obtener_mensajes(
         "mensajes": messages
     }
 
+
 @app.get("/obtener_mensaje/{message_id}", summary="Obtener mensaje específico")
 async def obtener_mensaje(message_id: int):
     """Endpoint para obtener un mensaje específico con adjuntos."""
     message = madre_db.get_message_by_id(message_id)
     if not message:
         raise HTTPException(status_code=404, detail="Mensaje no encontrado")
-    
+
     attachments = madre_db.get_message_attachments(message_id)
     message['attachments'] = attachments
-    
+
     return {
         "status": "ok",
         "mensaje": message
     }
+
 
 @app.post("/marcar_leido/{message_id}", summary="Marcar mensaje como leído")
 async def marcar_leido(message_id: int):
@@ -314,6 +329,7 @@ async def marcar_leido(message_id: int):
     else:
         raise HTTPException(status_code=404, detail="Mensaje no encontrado")
 
+
 @app.delete("/eliminar_mensaje/{message_id}", summary="Eliminar mensaje")
 async def eliminar_mensaje(message_id: int):
     """Endpoint para eliminar un mensaje."""
@@ -322,6 +338,7 @@ async def eliminar_mensaje(message_id: int):
         return {"status": "mensaje_eliminado", "message_id": message_id}
     else:
         raise HTTPException(status_code=404, detail="Mensaje no encontrado")
+
 
 @app.get("/contar_no_leidos", summary="Contar mensajes no leídos")
 async def contar_no_leidos(usuario: str = Query(..., description="Nombre de usuario")):
@@ -337,6 +354,7 @@ async def contar_no_leidos(usuario: str = Query(..., description="Nombre de usua
 # ENDPOINTS DE CHAT EN VIVO
 # ============================================================================
 
+
 @app.post("/enviar_chat", summary="Enviar mensaje de chat en vivo")
 async def enviar_chat(request: ChatMessageRequest):
     """Endpoint para enviar un mensaje de chat en vivo."""
@@ -345,7 +363,7 @@ async def enviar_chat(request: ChatMessageRequest):
         request.to_user,
         request.message
     )
-    
+
     if chat_id:
         return {
             "status": "chat_enviado",
@@ -354,6 +372,7 @@ async def enviar_chat(request: ChatMessageRequest):
         }
     else:
         raise HTTPException(status_code=500, detail="Error al enviar chat")
+
 
 @app.get("/obtener_chat", summary="Obtener historial de chat")
 async def obtener_chat(
@@ -369,6 +388,7 @@ async def obtener_chat(
         "mensajes": messages
     }
 
+
 @app.post("/marcar_chat_leido", summary="Marcar mensajes de chat como leídos")
 async def marcar_chat_leido(
     from_user: str = Query(..., description="Usuario remitente"),
@@ -377,6 +397,7 @@ async def marcar_chat_leido(
     """Endpoint para marcar mensajes de chat como leídos."""
     madre_db.mark_chat_messages_read(from_user, to_user)
     return {"status": "chat_marcado_leido"}
+
 
 @app.get("/contar_chat_no_leidos", summary="Contar mensajes de chat no leídos")
 async def contar_chat_no_leidos(usuario: str = Query(..., description="Nombre de usuario")):
@@ -391,6 +412,7 @@ async def contar_chat_no_leidos(usuario: str = Query(..., description="Nombre de
 # ============================================================================
 # ENDPOINTS DE MULTI-MADRE
 # ============================================================================
+
 
 @app.post("/registrar_servidor_madre", summary="Registrar otro servidor Madre")
 async def registrar_servidor_madre(
@@ -408,6 +430,7 @@ async def registrar_servidor_madre(
     else:
         raise HTTPException(status_code=400, detail="Servidor ya registrado")
 
+
 @app.get("/obtener_servidores_madre", summary="Obtener servidores Madre registrados")
 async def obtener_servidores_madre():
     """Endpoint para obtener todos los servidores Madre registrados."""
@@ -418,25 +441,26 @@ async def obtener_servidores_madre():
         "servidores": servers
     }
 
+
 @app.get("/health", summary="Health check endpoint")
 async def health_check():
     """
     Health check endpoint para verificar el estado del servidor.
     Verifica conectividad con la base de datos.
-    
+
     Returns:
         Dict con status, version, database_status
     """
     try:
         # Verificar conectividad de base de datos
-        users_count = len(madre_db.get_all_users())
+        _ = len(madre_db.get_all_users())
         db_status = "healthy"
         logger.debug("Health check: Database connection OK")
     except Exception as e:
         # No exponer detalles del error por seguridad
         db_status = "unhealthy"
         logger.error(f"Health check: Database error - {e}", exc_info=True)
-    
+
     return {
         "status": "online",
         "version": APP_VERSION,
@@ -448,7 +472,7 @@ async def health_check():
 async def root():
     """
     Endpoint simple para verificar que el servidor está en línea.
-    
+
     Returns:
         Dict con mensaje, version, features
     """

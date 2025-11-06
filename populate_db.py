@@ -4,15 +4,13 @@
 # Script para poblar la base de datos con usuarios de prueba y datos de ejemplo.
 
 import madre_db
-from datetime import datetime
-import json
-import os
+
 
 def create_sample_users():
     """Crea usuarios de ejemplo con datos completos."""
-    
+
     print("Creando usuarios de ejemplo...")
-    
+
     # Usuario 1: Juan Pérez
     if madre_db.create_user(
         username="juan_perez",
@@ -24,18 +22,18 @@ def create_sample_users():
         permiso_acceso=True
     ):
         print("✓ Usuario 'juan_perez' creado")
-        
+
         # Obtener ID del usuario
         user = madre_db.get_user("juan_perez")
         user_id = user['id']
-        
+
         # Añadir foto de perfil (ruta simulada)
         madre_db.set_user_profile_photo(
-            user_id, 
+            user_id,
             "data/users/profile_photos/juan_perez.jpg"
         )
         print("  - Foto de perfil añadida")
-        
+
         # Crear cronograma de entrenamiento para diciembre 2024
         schedule_data = {
             "dias": {
@@ -78,21 +76,21 @@ def create_sample_users():
             "objetivo": "Ganancia muscular y definición",
             "notas": "Aumentar progresivamente la carga cada semana"
         }
-        
+
         madre_db.save_training_schedule(user_id, "Diciembre", 2024, schedule_data)
         print("  - Cronograma de entrenamiento añadido")
-        
+
         # Añadir fotos a la galería
         gallery_photos = [
             ("data/users/gallery/juan_perez_progress_1.jpg", "Progreso mes 1 - Peso inicial"),
             ("data/users/gallery/juan_perez_progress_2.jpg", "Progreso mes 2 - Definición"),
             ("data/users/gallery/juan_perez_training_1.jpg", "Entrenamiento de piernas")
         ]
-        
+
         for photo_path, descripcion in gallery_photos:
             madre_db.add_photo_to_gallery(user_id, photo_path, descripcion)
         print(f"  - {len(gallery_photos)} fotos añadidas a la galería")
-    
+
     # Usuario 2: María López
     if madre_db.create_user(
         username="maria_lopez",
@@ -104,16 +102,16 @@ def create_sample_users():
         permiso_acceso=True
     ):
         print("✓ Usuario 'maria_lopez' creado")
-        
+
         user = madre_db.get_user("maria_lopez")
         user_id = user['id']
-        
+
         madre_db.set_user_profile_photo(
             user_id,
             "data/users/profile_photos/maria_lopez.jpg"
         )
         print("  - Foto de perfil añadida")
-        
+
         # Cronograma enfocado en cardio
         schedule_data = {
             "dias": {
@@ -156,19 +154,19 @@ def create_sample_users():
             "objetivo": "Mejorar resistencia cardiovascular y pérdida de grasa",
             "notas": "Mantener frecuencia cardíaca entre 140-160 bpm"
         }
-        
+
         madre_db.save_training_schedule(user_id, "Diciembre", 2024, schedule_data)
         print("  - Cronograma de entrenamiento añadido")
-        
+
         gallery_photos = [
             ("data/users/gallery/maria_lopez_running.jpg", "Media maratón completada"),
             ("data/users/gallery/maria_lopez_yoga.jpg", "Sesión de yoga matutina")
         ]
-        
+
         for photo_path, descripcion in gallery_photos:
             madre_db.add_photo_to_gallery(user_id, photo_path, descripcion)
         print(f"  - {len(gallery_photos)} fotos añadidas a la galería")
-    
+
     # Usuario 3: Carlos Rodríguez (sin permisos)
     if madre_db.create_user(
         username="carlos_rodriguez",
@@ -180,16 +178,16 @@ def create_sample_users():
         permiso_acceso=False
     ):
         print("✓ Usuario 'carlos_rodriguez' creado (sin permiso de acceso)")
-        
+
         user = madre_db.get_user("carlos_rodriguez")
         user_id = user['id']
-        
+
         madre_db.set_user_profile_photo(
             user_id,
             "data/users/profile_photos/carlos_rodriguez.jpg"
         )
         print("  - Foto de perfil añadida")
-        
+
         # Cronograma básico para principiantes
         schedule_data = {
             "dias": {
@@ -232,22 +230,23 @@ def create_sample_users():
             "objetivo": "Adaptación inicial al entrenamiento",
             "notas": "Enfocarse en la técnica correcta antes de aumentar peso"
         }
-        
+
         madre_db.save_training_schedule(user_id, "Diciembre", 2024, schedule_data)
         print("  - Cronograma de entrenamiento añadido")
-        
+
         gallery_photos = [
             ("data/users/gallery/carlos_rodriguez_inicio.jpg", "Primer día en el gimnasio")
         ]
-        
+
         for photo_path, descripcion in gallery_photos:
             madre_db.add_photo_to_gallery(user_id, photo_path, descripcion)
         print(f"  - {len(gallery_photos)} fotos añadidas a la galería")
 
+
 def create_initial_sync_data():
     """Crea el contenido inicial de sincronización."""
     print("\nCreando contenido de sincronización global...")
-    
+
     contenido = """Bienvenido al Sistema de Gestión de Gimnasio
 
 Este sistema te permite:
@@ -258,9 +257,10 @@ Este sistema te permite:
 
 ¡Mantente activo y alcanza tus objetivos!
 """
-    
+
     madre_db.update_sync_data(contenido, "1.0.0")
     print("✓ Contenido de sincronización creado")
+
 
 def main():
     """Función principal."""
@@ -268,10 +268,10 @@ def main():
     print("POBLANDO BASE DE DATOS DEL SISTEMA GYM")
     print("=" * 60)
     print()
-    
+
     create_sample_users()
     create_initial_sync_data()
-    
+
     print()
     print("=" * 60)
     print("BASE DE DATOS POBLADA EXITOSAMENTE")
@@ -288,6 +288,7 @@ def main():
     print("  - Cronograma de entrenamiento mensual")
     print("  - Galería de fotos personal")
     print()
+
 
 if __name__ == "__main__":
     main()
