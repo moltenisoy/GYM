@@ -63,122 +63,122 @@ def init_database() -> None:
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
-        
-        # Tabla de usuarios
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password_hash TEXT NOT NULL,
-                permiso_acceso INTEGER DEFAULT 1,
-                nombre_completo TEXT,
-                email TEXT,
-                telefono TEXT,
-                fecha_registro TEXT,
-                equipo TEXT,
-                last_sync TEXT
-            )
-        ''')
-        
-        # Tabla de fotos de perfil
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS profile_photos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                photo_path TEXT NOT NULL,
-                upload_date TEXT,
-                FOREIGN KEY (user_id) REFERENCES users(id)
-            )
-        ''')
-        
-        # Tabla de cronogramas de entrenamiento
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS training_schedules (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                mes TEXT NOT NULL,
-                ano INTEGER NOT NULL,
-                schedule_data TEXT NOT NULL,
-                created_date TEXT,
-                modified_date TEXT,
-                FOREIGN KEY (user_id) REFERENCES users(id)
-            )
-        ''')
-        
-        # Tabla de galería de fotos
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS photo_gallery (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                photo_path TEXT NOT NULL,
-                descripcion TEXT,
-                upload_date TEXT,
-                FOREIGN KEY (user_id) REFERENCES users(id)
-            )
-        ''')
-        
-        # Tabla de datos de sincronización global
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS sync_data (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                contenido TEXT NOT NULL,
-                metadatos_version TEXT NOT NULL,
-                update_date TEXT
-            )
-        ''')
-        
-        # Tabla de mensajes
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                from_user TEXT NOT NULL,
-                to_user TEXT NOT NULL,
-                subject TEXT,
-                body TEXT NOT NULL,
-                sent_date TEXT NOT NULL,
-                read_date TEXT,
-                is_read INTEGER DEFAULT 0,
-                parent_message_id INTEGER,
-                FOREIGN KEY (parent_message_id) REFERENCES messages(id)
-            )
-        ''')
-        
-        # Tabla de adjuntos de mensajes
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS message_attachments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                message_id INTEGER NOT NULL,
-                filename TEXT NOT NULL,
-                file_path TEXT NOT NULL,
-                file_size INTEGER NOT NULL,
-                upload_date TEXT NOT NULL,
-                FOREIGN KEY (message_id) REFERENCES messages(id)
-            )
-        ''')
-        
-        # Tabla de mensajes de chat en vivo
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                from_user TEXT NOT NULL,
-                to_user TEXT NOT NULL,
-                message TEXT NOT NULL,
-                timestamp TEXT NOT NULL,
-                is_read INTEGER DEFAULT 0
-            )
-        ''')
-        
-        # Tabla de servidores madre para sincronización multi-madre
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS madre_servers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                server_name TEXT UNIQUE NOT NULL,
-                server_url TEXT NOT NULL,
-                is_active INTEGER DEFAULT 1,
-                last_sync TEXT,
-                sync_token TEXT
-            )
-        ''')
+            
+            # Tabla de usuarios
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    permiso_acceso INTEGER DEFAULT 1,
+                    nombre_completo TEXT,
+                    email TEXT,
+                    telefono TEXT,
+                    fecha_registro TEXT,
+                    equipo TEXT,
+                    last_sync TEXT
+                )
+            ''')
+            
+            # Tabla de fotos de perfil
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS profile_photos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    photo_path TEXT NOT NULL,
+                    upload_date TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+            ''')
+            
+            # Tabla de cronogramas de entrenamiento
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS training_schedules (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    mes TEXT NOT NULL,
+                    ano INTEGER NOT NULL,
+                    schedule_data TEXT NOT NULL,
+                    created_date TEXT,
+                    modified_date TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+            ''')
+            
+            # Tabla de galería de fotos
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS photo_gallery (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    photo_path TEXT NOT NULL,
+                    descripcion TEXT,
+                    upload_date TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+            ''')
+            
+            # Tabla de datos de sincronización global
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS sync_data (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    contenido TEXT NOT NULL,
+                    metadatos_version TEXT NOT NULL,
+                    update_date TEXT
+                )
+            ''')
+            
+            # Tabla de mensajes
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    from_user TEXT NOT NULL,
+                    to_user TEXT NOT NULL,
+                    subject TEXT,
+                    body TEXT NOT NULL,
+                    sent_date TEXT NOT NULL,
+                    read_date TEXT,
+                    is_read INTEGER DEFAULT 0,
+                    parent_message_id INTEGER,
+                    FOREIGN KEY (parent_message_id) REFERENCES messages(id)
+                )
+            ''')
+            
+            # Tabla de adjuntos de mensajes
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS message_attachments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    message_id INTEGER NOT NULL,
+                    filename TEXT NOT NULL,
+                    file_path TEXT NOT NULL,
+                    file_size INTEGER NOT NULL,
+                    upload_date TEXT NOT NULL,
+                    FOREIGN KEY (message_id) REFERENCES messages(id)
+                )
+            ''')
+            
+            # Tabla de mensajes de chat en vivo
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    from_user TEXT NOT NULL,
+                    to_user TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    timestamp TEXT NOT NULL,
+                    is_read INTEGER DEFAULT 0
+                )
+            ''')
+            
+            # Tabla de servidores madre para sincronización multi-madre
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS madre_servers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    server_name TEXT UNIQUE NOT NULL,
+                    server_url TEXT NOT NULL,
+                    is_active INTEGER DEFAULT 1,
+                    last_sync TEXT,
+                    sync_token TEXT
+                )
+            ''')
         
             conn.commit()
             conn.close()
