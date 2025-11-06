@@ -249,7 +249,7 @@ Respuesta:
 ```json
 {
   "status": "online",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "database_status": "healthy"
 }
 ```

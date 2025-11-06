@@ -63,7 +63,7 @@ LOG_FILE_BACKUP_COUNT = 5
 LOG_DIR_NAME = "logs"
 
 # Application Metadata
-APP_VERSION = "3.0.0"
+APP_VERSION = "3.1.0"
 APP_FEATURES = [
     "Autenticación con contraseña",
     "Base de datos SQLite persistente",

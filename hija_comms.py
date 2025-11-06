@@ -9,6 +9,7 @@ import json
 import os
 import hashlib
 import time
+import random
 from datetime import datetime
 from typing import Optional, Dict, Any, Tuple
 from config.settings import get_hija_settings
@@ -110,8 +111,8 @@ class APICommunicator:
             except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
                 last_exception = e
                 if attempt < max_retries - 1:
-                    # Exponential backoff with jitter
-                    wait_time = (2 ** attempt) + (time.time() % 1)
+                    # Exponential backoff with jitter (random 0-1 second)
+                    wait_time = (2 ** attempt) + random.uniform(0, 1)
                     logger.warning(f"Request failed (attempt {attempt + 1}/{max_retries}): {e}. Retrying in {wait_time:.2f}s...")
                     time.sleep(wait_time)
                 else:
