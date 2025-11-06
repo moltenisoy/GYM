@@ -54,6 +54,30 @@ pip install -r requirements_madre.txt
 pip install -r requirements_hija.txt
 ```
 
+### 4. Configuración (Opcional)
+
+El sistema utiliza variables de entorno para su configuración. Puedes crear un archivo `.env` para personalizar los valores:
+
+```bash
+# Copiar el archivo de ejemplo
+cp config/.env.example .env
+
+# Editar con tus valores personalizados
+nano .env  # o usa tu editor preferido
+```
+
+**Variables de configuración principales:**
+
+| Variable | Descripción | Valor por defecto |
+|----------|-------------|-------------------|
+| `MADRE_HOST` | Host del servidor Madre | `0.0.0.0` |
+| `MADRE_PORT` | Puerto del servidor Madre | `8000` |
+| `MADRE_BASE_URL` | URL del servidor (para Hija) | `http://127.0.0.1:8000` |
+| `DB_PATH` | Ruta de la base de datos | `data/gym_database.db` |
+| `LOG_LEVEL` | Nivel de logging | `INFO` |
+
+> 💡 **Nota**: Si no creas un archivo `.env`, el sistema usará los valores por defecto.
+
 ## Uso
 
 ### Iniciar la Aplicación Madre
@@ -71,7 +95,16 @@ python madre_main.py
 
 ### Iniciar la Aplicación Hija
 
-1. **IMPORTANTE**: Antes de ejecutar, edita `hija_comms.py` y modifica la línea:
+1. **IMPORTANTE**: Antes de ejecutar, configura la URL del servidor Madre:
+
+**Opción A (Recomendada): Usar variables de entorno**
+```bash
+# Crear archivo .env
+echo "MADRE_BASE_URL=http://192.168.1.100:8000" > .env
+```
+
+**Opción B: Editar directamente (no recomendado)**
+Edita `hija_comms.py` y modifica la línea:
 ```python
 MADRE_BASE_URL = "http://127.0.0.1:8000"
 ```
@@ -118,6 +151,9 @@ La aplicación incluye tres usuarios de prueba con **datos completos**:
 - ✅ Publicación de contenido para sincronización
 - ✅ Servidor API REST concurrente
 - ✅ Interfaz gráfica moderna y responsiva
+- ✅ **Logging estructurado con rotación de archivos** (NUEVO v3.1)
+- ✅ **Configuración mediante variables de entorno** (NUEVO v3.1)
+- ✅ **Health check endpoint para monitoreo** (NUEVO v3.1)
 
 ### Aplicación Hija
 - ✅ **Autenticación con contraseña** (NUEVO)
@@ -131,6 +167,9 @@ La aplicación incluye tres usuarios de prueba con **datos completos**:
 - ✅ Sincronización de contenido desde la Madre
 - ✅ Manejo robusto de errores de conexión
 - ✅ Diseño modular y escalable
+- ✅ **Retry logic con exponential backoff** (NUEVO v3.1)
+- ✅ **Logging estructurado** (NUEVO v3.1)
+- ✅ **Configuración centralizada** (NUEVO v3.1)
 
 > 📖 **Ver documentación completa de nuevas funcionalidades en** [`NUEVAS_FUNCIONALIDADES.md`](NUEVAS_FUNCIONALIDADES.md)
 
@@ -152,6 +191,68 @@ La aplicación incluye tres usuarios de prueba con **datos completos**:
 - **HTTP Client**: requests (biblioteca estándar para peticiones HTTP)
 - **Concurrencia**: threading (ejecución simultánea de GUI y servidor)
 - **Validación**: Pydantic (modelos de datos con validación automática)
+- **Logging**: Python logging module con RotatingFileHandler
+- **Database**: SQLite3 con thread-safety
+- **Configuration**: Environment variables con fallback a defaults
+
+### Estructura del Proyecto (v3.1)
+
+```
+GYM/
+├── madre_main.py           # Punto de entrada Madre
+├── madre_server.py         # API REST con FastAPI
+├── madre_gui.py            # Interfaz gráfica Madre
+├── madre_db.py             # Capa de base de datos
+├── hija_main.py            # Punto de entrada Hija
+├── hija_comms.py           # Comunicaciones HTTP
+├── hija_views.py           # Componentes GUI Hija
+├── shared/                 # Módulos compartidos
+│   ├── constants.py        # Constantes centralizadas
+│   └── logger.py           # Configuración de logging
+├── config/                 # Configuración
+│   ├── .env.example        # Plantilla de configuración
+│   └── settings.py         # Carga de variables de entorno
+├── data/                   # Datos persistentes
+│   ├── gym_database.db     # Base de datos SQLite
+│   └── hija_local/         # Datos locales de Hija
+├── logs/                   # Archivos de log
+│   ├── madre_main.log
+│   ├── madre_server.log
+│   ├── madre_db.log
+│   ├── hija_main.log
+│   └── hija_comms.log
+└── requirements_*.txt      # Dependencias
+```
+
+### Logs y Monitoreo (v3.1)
+
+El sistema ahora incluye logging estructurado con:
+- **Niveles**: DEBUG, INFO, WARNING, ERROR, CRITICAL
+- **Rotación**: Archivos de 10MB con 5 backups
+- **Ubicación**: Directorio `logs/` (creado automáticamente)
+- **Formato**: `[timestamp] - [module] - [level] - [message]`
+
+**Ver logs en tiempo real:**
+```bash
+# Linux/macOS
+tail -f logs/madre_server.log
+
+# Windows PowerShell
+Get-Content logs/madre_server.log -Wait -Tail 10
+```
+
+**Health Check Endpoint:**
+```bash
+curl http://localhost:8000/health
+```
+Respuesta:
+```json
+{
+  "status": "online",
+  "version": "3.0.0",
+  "database_status": "healthy"
+}
+```
 
 ## Distribución
 
