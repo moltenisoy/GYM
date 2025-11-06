@@ -13,25 +13,56 @@ import hashlib
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 import json
+from config.settings import get_madre_settings
+from shared.logger import setup_logger
 
-# Ruta de la base de datos
-DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'gym_database.db')
+# Initialize logger
+logger = setup_logger(__name__, log_file="madre_db.log")
+
+# Load configuration
+settings = get_madre_settings()
+
+# Ruta de la base de datos (from configuration)
+DB_PATH = settings.DB_PATH if os.path.isabs(settings.DB_PATH) else os.path.join(os.path.dirname(__file__), settings.DB_PATH)
 
 # Lock para thread-safety
 db_lock = threading.Lock()
 
-def get_db_connection():
-    """Crea y retorna una conexión a la base de datos."""
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row  # Permite acceso por nombre de columna
-    return conn
+logger.info(f"Database module initialized - DB Path: {DB_PATH}")
 
-def init_database():
-    """Inicializa la base de datos con las tablas necesarias."""
+
+def get_db_connection() -> sqlite3.Connection:
+    """
+    Crea y retorna una conexión a la base de datos.
+    
+    Returns:
+        sqlite3.Connection: Conexión a la base de datos con row_factory configurado
+    
+    Raises:
+        sqlite3.Error: Si hay un error al conectar con la base de datos
+    """
+    try:
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn.row_factory = sqlite3.Row  # Permite acceso por nombre de columna
+        return conn
+    except Exception as e:
+        logger.error(f"Error creating database connection: {e}", exc_info=True)
+        raise
+
+def init_database() -> None:
+    """
+    Inicializa la base de datos con las tablas necesarias.
+    Crea todas las tablas si no existen.
+    
+    Raises:
+        sqlite3.Error: Si hay un error al crear las tablas
+    """
+    logger.info("Initializing database schema...")
     with db_lock:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
         
         # Tabla de usuarios
         cursor.execute('''
@@ -149,8 +180,12 @@ def init_database():
             )
         ''')
         
-        conn.commit()
-        conn.close()
+            conn.commit()
+            conn.close()
+            logger.info("Database schema initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing database: {e}", exc_info=True)
+            raise
 
 def hash_password(password: str) -> str:
     """Hash de contraseña usando SHA256."""

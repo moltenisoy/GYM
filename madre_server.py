@@ -11,9 +11,16 @@ from datetime import datetime, timedelta
 
 # Importar la base de datos
 import madre_db
+from shared.logger import setup_logger
+from shared.constants import APP_VERSION, APP_FEATURES, SYNC_REQUIRED_HOURS
+
+# Initialize logger
+logger = setup_logger(__name__, log_file="madre_server.log")
 
 # Crear la instancia de la aplicación FastAPI
-app = FastAPI(title="Servidor API de la Aplicación Madre")
+app = FastAPI(title="Servidor API de la Aplicación Madre", version=APP_VERSION)
+
+logger.info(f"FastAPI application initialized - Version {APP_VERSION}")
 
 # --- Modelos de Datos (Pydantic) ---
 class AuthRequest(BaseModel):
@@ -31,7 +38,18 @@ async def autorizar_usuario(auth_request: AuthRequest):
     """
     Endpoint de autenticación con contraseña.
     Verifica credenciales y valida que el usuario tenga permiso de acceso.
+    
+    Args:
+        auth_request: Objeto con username y password
+    
+    Returns:
+        Dict con status, usuario, nombre_completo, equipo, last_sync
+    
+    Raises:
+        HTTPException: 401 si credenciales inválidas, 403 si acceso denegado
     """
+    logger.info(f"Intento de autorización para usuario: {auth_request.username}")
+    
     # Autenticar usuario
     success, user_data = madre_db.authenticate_user(
         auth_request.username, 
@@ -39,14 +57,18 @@ async def autorizar_usuario(auth_request: AuthRequest):
     )
     
     if not success or not user_data:
+        logger.warning(f"Credenciales inválidas para usuario: {auth_request.username}")
         raise HTTPException(status_code=401, detail="Credenciales inválidas.")
     
     # Verificar permiso de acceso
     if not user_data.get('permiso_acceso'):
+        logger.warning(f"Acceso denegado para usuario: {auth_request.username}")
         raise HTTPException(status_code=403, detail="Permiso de acceso denegado por el administrador.")
     
     # Actualizar última sincronización
     madre_db.update_user_sync(auth_request.username)
+    
+    logger.info(f"Autorización exitosa para usuario: {auth_request.username}")
     
     # Retornar información del usuario
     return {
@@ -57,20 +79,33 @@ async def autorizar_usuario(auth_request: AuthRequest):
         "last_sync": datetime.now().isoformat()
     }
 
-@app.get("/validar_sync", summary="Valida si el usuario necesita sincronizar (72 horas)")
+@app.get("/validar_sync", summary="Valida si el usuario necesita sincronizar")
 async def validar_sync(
     usuario: str = Query(..., description="Nombre de usuario")
 ):
     """
-    Valida si el usuario ha sincronizado en las últimas 72 horas.
+    Valida si el usuario ha sincronizado en las últimas horas configuradas.
     Si no, debe bloquearse el acceso en la app Hija.
+    
+    Args:
+        usuario: Nombre de usuario a validar
+    
+    Returns:
+        Dict con requiere_sync, bloqueado, mensaje, horas_desde_sync
+    
+    Raises:
+        HTTPException: 404 si usuario no encontrado
     """
+    logger.debug(f"Validando estado de sincronización para usuario: {usuario}")
+    
     user = madre_db.get_user(usuario)
     if not user:
+        logger.warning(f"Usuario no encontrado en validación de sync: {usuario}")
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
     
     last_sync_str = user.get('last_sync')
     if not last_sync_str:
+        logger.info(f"Primera sincronización requerida para: {usuario}")
         return {
             "requiere_sync": True,
             "bloqueado": True,
@@ -82,7 +117,8 @@ async def validar_sync(
         tiempo_desde_sync = datetime.now() - last_sync
         horas_desde_sync = tiempo_desde_sync.total_seconds() / 3600
         
-        if horas_desde_sync > 72:
+        if horas_desde_sync > SYNC_REQUIRED_HOURS:
+            logger.warning(f"Sincronización requerida para {usuario}: {horas_desde_sync:.1f} horas desde última sync")
             return {
                 "requiere_sync": True,
                 "bloqueado": True,
@@ -90,13 +126,15 @@ async def validar_sync(
                 "horas_desde_sync": horas_desde_sync
             }
         else:
+            logger.debug(f"Sincronización actual para {usuario}: {horas_desde_sync:.1f} horas")
             return {
                 "requiere_sync": False,
                 "bloqueado": False,
                 "mensaje": "Sincronización actual",
                 "horas_desde_sync": horas_desde_sync
             }
-    except:
+    except Exception as e:
+        logger.error(f"Error validando sincronización para {usuario}: {e}", exc_info=True)
         return {
             "requiere_sync": True,
             "bloqueado": True,
@@ -380,22 +418,42 @@ async def obtener_servidores_madre():
         "servidores": servers
     }
 
+@app.get("/health", summary="Health check endpoint")
+async def health_check():
+    """
+    Health check endpoint para verificar el estado del servidor.
+    Verifica conectividad con la base de datos.
+    
+    Returns:
+        Dict con status, version, database_status
+    """
+    try:
+        # Verificar conectividad de base de datos
+        users_count = len(madre_db.get_all_users())
+        db_status = "healthy"
+        logger.debug("Health check: Database connection OK")
+    except Exception as e:
+        db_status = f"unhealthy: {str(e)}"
+        logger.error(f"Health check: Database error - {e}")
+    
+    return {
+        "status": "online",
+        "version": APP_VERSION,
+        "database_status": db_status
+    }
+
+
 @app.get("/", summary="Endpoint raíz de estado")
 async def root():
     """
     Endpoint simple para verificar que el servidor está en línea.
+    
+    Returns:
+        Dict con mensaje, version, features
     """
+    logger.debug("Root endpoint accessed")
     return {
         "mensaje": "Servidor de la Aplicación Madre está en línea.",
-        "version": "3.0.0",
-        "features": [
-            "Autenticación con contraseña",
-            "Base de datos SQLite persistente",
-            "Validación de sincronización 72h",
-            "Sincronización masiva",
-            "Gestión completa de usuarios",
-            "Sistema de mensajería",
-            "Chat en vivo",
-            "Soporte multi-madre"
-        ]
+        "version": APP_VERSION,
+        "features": APP_FEATURES
     }

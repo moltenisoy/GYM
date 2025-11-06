@@ -17,10 +17,20 @@ import time
 from datetime import datetime
 from hija_comms import APICommunicator
 from hija_views import LoginFrame, MainAppFrame
+from config.settings import get_hija_settings
+from shared.logger import setup_logger
+
+# Initialize logger
+logger = setup_logger(__name__, log_file="hija_main.log")
+
+# Load configuration
+settings = get_hija_settings()
 
 # Configuración inicial de apariencia
 customtkinter.set_appearance_mode("system")
 customtkinter.set_default_color_theme("blue")
+
+logger.info(f"Hija application module loaded - Settings: {settings}")
 
 class AppHija(customtkinter.CTk):
     """
@@ -30,6 +40,8 @@ class AppHija(customtkinter.CTk):
     """
     def __init__(self):
         super().__init__()
+        
+        logger.info("=== Initializing Hija Application ===")
         
         self.title("Aplicación Hija - Gimnasio")
         self.geometry("800x600")
@@ -42,14 +54,16 @@ class AppHija(customtkinter.CTk):
         self.current_username = None
         self.current_user_data = None
         
-        # --- Control de sincronización ---
+        # --- Control de sincronización (from settings) ---
         self.sync_thread = None
         self.sync_running = False
-        self.sync_interval = 300  # 5 minutos inicialmente (en segundos)
+        self.sync_interval = settings.SYNC_INTERVAL_INITIAL
         self.first_sync_done = False
         
         # --- Almacenamiento de Vistas ---
         self._current_frame = None
+        
+        logger.info("Hija application initialized, attempting auto-login...")
         
         # Intentar auto-login si hay credenciales guardadas
         self._intentar_auto_login()
@@ -173,9 +187,9 @@ class AppHija(customtkinter.CTk):
                 # Marcar que la primera sincronización fue exitosa
                 if not self.first_sync_done:
                     self.first_sync_done = True
-                    # Cambiar intervalo a 30 minutos después de primera sync exitosa
-                    self.sync_interval = 1800  # 30 minutos
-                    print("Primera sincronización exitosa. Intervalo cambiado a 30 minutos.")
+                    # Cambiar intervalo a 30 minutos después de primera sync exitosa (from settings)
+                    self.sync_interval = settings.SYNC_INTERVAL_NORMAL
+                    logger.info(f"Primera sincronización exitosa. Intervalo cambiado a {self.sync_interval//60} minutos.")
             else:
                 # Si falla, 'data' es un diccionario con un error
                 error_msg = data.get("error", "Error de sincronización desconocido.")
@@ -190,17 +204,10 @@ class AppHija(customtkinter.CTk):
             return  # Ya hay una sincronización en progreso
         
         self.sync_running = True
-        self.sync_thread = threading.Thread(target=self._sync_loop, daemon=True)
-        # Configurar prioridad más baja (en sistemas Unix)
-        try:
-            import os
-            if hasattr(os, 'nice'):
-                os.nice(10)  # Aumentar nice value = menor prioridad
-        except:
-            pass
+        self.sync_thread = threading.Thread(target=self._sync_loop, daemon=True, name="SyncThread")
         
         self.sync_thread.start()
-        print("Sincronización automática iniciada en segundo plano")
+        logger.info(f"Sincronización automática iniciada (intervalo: {self.sync_interval}s)")
     
     def _sync_loop(self):
         """
@@ -248,13 +255,13 @@ class AppHija(customtkinter.CTk):
                 # Marcar primera sync como exitosa
                 if not self.first_sync_done:
                     self.first_sync_done = True
-                    self.sync_interval = 1800  # Cambiar a 30 minutos
-                    print("Primera sincronización automática exitosa. Intervalo -> 30 min")
+                    self.sync_interval = settings.SYNC_INTERVAL_NORMAL
+                    logger.info(f"Primera sincronización automática exitosa. Intervalo -> {self.sync_interval//60} min")
             else:
-                print(f"Error en sincronización automática: {data.get('error', 'Desconocido')}")
+                logger.warning(f"Error en sincronización automática: {data.get('error', 'Desconocido')}")
                 
         except Exception as e:
-            print(f"Excepción en sincronización automática: {e}")
+            logger.error(f"Excepción en sincronización automática: {e}", exc_info=True)
     
     def _enviar_mensaje(self, to_user: str, subject: str, body: str):
         """Envía un mensaje a otro usuario."""
@@ -302,7 +309,7 @@ class AppHija(customtkinter.CTk):
             messages = data.get('mensajes', [])
             self._current_frame.update_message_list(messages)
         else:
-            print(f"Error cargando mensajes: {data.get('error', 'Desconocido')}")
+            logger.error(f"Error cargando mensajes: {data.get('error', 'Desconocido')}")
     
     def _cargar_chat(self):
         """Carga el historial de chat."""
@@ -315,18 +322,30 @@ class AppHija(customtkinter.CTk):
             messages = data.get('mensajes', [])
             self._current_frame.update_chat_history(messages)
         else:
-            print(f"Error cargando chat: {data.get('error', 'Desconocido')}")
+            logger.error(f"Error cargando chat: {data.get('error', 'Desconocido')}")
     
     def destroy(self):
         """
         Override del método destroy para detener la sincronización al cerrar.
         """
+        logger.info("Shutting down Hija application...")
         self.sync_running = False
         if self.sync_thread and self.sync_thread.is_alive():
+            logger.debug("Waiting for sync thread to finish...")
             self.sync_thread.join(timeout=1)
         super().destroy()
+        logger.info("Hija application closed")
 
 # --- Punto de Entrada ---
 if __name__ == "__main__":
-    app = AppHija()
-    app.mainloop()
+    logger.info("=== Starting Hija Application ===")
+    try:
+        app = AppHija()
+        app.mainloop()
+    except KeyboardInterrupt:
+        logger.info("Keyboard interrupt received")
+    except Exception as e:
+        logger.critical(f"Fatal error in Hija application: {e}", exc_info=True)
+        raise
+    finally:
+        logger.info("=== Hija Application Finished ===")

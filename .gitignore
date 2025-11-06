@@ -44,3 +44,11 @@ Thumbs.db
 # Application Data
 data/gym_database.db
 data/hija_local/
+
+# Logs
+logs/
+*.log
+
+# Environment files
+.env
+config/.env
