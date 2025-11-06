@@ -433,8 +433,9 @@ async def health_check():
         db_status = "healthy"
         logger.debug("Health check: Database connection OK")
     except Exception as e:
-        db_status = f"unhealthy: {str(e)}"
-        logger.error(f"Health check: Database error - {e}")
+        # No exponer detalles del error por seguridad
+        db_status = "unhealthy"
+        logger.error(f"Health check: Database error - {e}", exc_info=True)
     
     return {
         "status": "online",
