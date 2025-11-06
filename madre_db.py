@@ -791,3 +791,11 @@ def update_madre_server_sync(server_name: str) -> bool:
 
 # Inicializar la base de datos al importar el módulo
 init_database()
+
+# Import and initialize extended database features
+try:
+    from madre_db_extended import init_extended_database
+    init_extended_database()
+    logger.info("Extended database features initialized successfully")
+except Exception as e:
+    logger.error(f"Error initializing extended database features: {e}", exc_info=True)
