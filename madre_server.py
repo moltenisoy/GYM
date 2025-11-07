@@ -22,6 +22,17 @@ app = FastAPI(title="Servidor API de la Aplicación Madre", version=APP_VERSION)
 
 logger.info(f"FastAPI application initialized - Version {APP_VERSION}")
 
+# Include extended API routers for features 1-16
+try:
+    from madre_server_extended_api import get_extended_api_router
+    from madre_server_extended_api2 import get_extended_api_router2
+    
+    app.include_router(get_extended_api_router())
+    app.include_router(get_extended_api_router2())
+    logger.info("Extended API routers included successfully (Features 1-16)")
+except Exception as e:
+    logger.error(f"Error including extended API routers: {e}", exc_info=True)
+
 # --- Modelos de Datos (Pydantic) ---
 
 
