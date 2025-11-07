@@ -1,9 +1,9 @@
 # hija_main.py
 #
-# Punto de entrada principal y CONTROLADOR de la Aplicación Hija.
+# Punto de entrada principal y CONTROLADOR de la Aplicación Hija (Socios del Gimnasio).
 #
 # Responsabilidades:
-# 1. Crear la ventana raíz de CustomTkinter.
+# 1. Crear la ventana raíz de CustomTkinter para los socios.
 # 2. Instanciar el módulo de comunicaciones ('hija_comms').
 # 3. Gestionar el estado de la aplicación, mostrando el 'LoginFrame'
 #    o el 'MainAppFrame' según corresponda (Conmutación de Frames).
@@ -44,7 +44,7 @@ class AppHija(customtkinter.CTk):
 
         logger.info("=== Initializing Hija Application ===")
 
-        self.title("Aplicación Hija - Gimnasio")
+        self.title("Portal del Socio - Gimnasio")
         self.geometry("800x600")
 
         self.grid_columnconfigure(0, weight=1)

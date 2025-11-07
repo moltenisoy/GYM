@@ -1,9 +1,9 @@
 # madre_gui.py
 #
 # Define la Interfaz Gráfica de Usuario (GUI) para la Aplicación Madre
-# usando CustomTkinter.
-# Esta GUI permite al administrador gestionar los permisos de usuario,
-# ver datos individuales y actualizar el contenido de sincronización.
+# (Panel de Administración del Gimnasio) usando CustomTkinter.
+# Esta GUI permite al personal administrativo gestionar socios, membresías,
+# permisos de acceso y contenido de sincronización.
 
 import customtkinter
 import requests
@@ -25,7 +25,7 @@ class UserDetailWindow(customtkinter.CTkToplevel):
         super().__init__(master, **kwargs)
 
         self.username = username
-        self.title(f"Detalles del Usuario: {username}")
+        self.title(f"Detalles del Socio: {username}")
         self.geometry("700x600")
 
         # Obtener datos del usuario
@@ -790,7 +790,7 @@ class AppMadre(customtkinter.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Aplicación Madre - Panel de Control")
+        self.title("Sistema de Gestión del Gimnasio - Panel Administrativo")
         self.geometry("800x600")
 
         self.grid_columnconfigure(0, weight=1)

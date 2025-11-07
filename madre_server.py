@@ -1,7 +1,7 @@
 # madre_server.py
 #
-# Define la lógica del servidor API usando FastAPI.
-# Esta API será consumida por las Aplicaciones Hijas.
+# Define la lógica del servidor API usando FastAPI para el Sistema de Gestión del Gimnasio.
+# Esta API será consumida por las Aplicaciones de los Socios (Aplicaciones Hijas).
 # Importa la base de datos SQLite desde 'madre_db'.
 
 from fastapi import FastAPI, Query, HTTPException
@@ -18,7 +18,7 @@ from shared.constants import APP_VERSION, APP_FEATURES, SYNC_REQUIRED_HOURS
 logger = setup_logger(__name__, log_file="madre_server.log")
 
 # Crear la instancia de la aplicación FastAPI
-app = FastAPI(title="Servidor API de la Aplicación Madre", version=APP_VERSION)
+app = FastAPI(title="API del Sistema de Gestión del Gimnasio", version=APP_VERSION)
 
 logger.info(f"FastAPI application initialized - Version {APP_VERSION}")
 

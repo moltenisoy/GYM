@@ -1,7 +1,8 @@
 # hija_comms.py
 #
-# Módulo de Comunicaciones de la Aplicación Hija.
-# Encapsula toda la lógica de red usando la biblioteca 'requests'.
+# Módulo de Comunicaciones de la Aplicación de Socios (Aplicación Hija).
+# Encapsula toda la lógica de red usando la biblioteca 'requests' para
+# comunicarse con el servidor del gimnasio.
 # Incluye gestión de credenciales persistentes y validación de sincronización.
 
 import requests
@@ -42,7 +43,7 @@ logger.info(f"Communication module initialized - Madre URL: {settings.MADRE_BASE
 
 class APICommunicator:
     """
-    Gestiona todas las peticiones HTTP a la API de la Aplicación Madre.
+    Gestiona todas las peticiones HTTP a la API del Sistema de Gestión del Gimnasio.
     Incluye retry logic con exponential backoff y timeouts configurables.
     """
 

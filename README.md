@@ -1,303 +1,241 @@
-# Sistema de Gestión Madre-Hija en Python
+# Sistema de Gestión de Gimnasio
 
-Este proyecto implementa una arquitectura de red "Madre-Hijo" (Servidor-Cliente) con aplicaciones de escritorio GUI modernas para Windows utilizando Python.
+Sistema integral de gestión administrativa para gimnasios que permite gestionar socios, membresías, clases, instalaciones y operaciones del día a día.
 
-## Descripción General
+## 📋 Descripción General
 
-El sistema consta de dos aplicaciones principales:
+Este sistema está diseñado para gimnasios que necesitan una solución completa de gestión administrativa y comunicación con sus socios. El sistema consta de dos aplicaciones principales:
 
-### Aplicación Madre (Servidor)
-Una aplicación híbrida que funciona como:
-- **Panel de gestión de escritorio** con GUI moderna (CustomTkinter)
-- **Servidor API REST** (FastAPI) para comunicación con las aplicaciones Hija
+### 🏢 Aplicación Madre (Administración)
+Aplicación de escritorio para el personal administrativo del gimnasio que funciona como:
+- **Panel de Administración**: Gestión completa de socios, membresías, pagos y clases
+- **Servidor API REST**: Comunicación con las aplicaciones de los socios
+- **Sistema de Reportes**: Análisis de negocio y KPIs
 
-**Archivos:**
-- `madre_db.py` - Base de datos en memoria (simulación)
-- `madre_server.py` - Servidor API con FastAPI
-- `madre_gui.py` - Interfaz gráfica de gestión
-- `madre_main.py` - Punto de entrada principal
+**Funcionalidades Principales:**
+- Gestión de socios y membresías
+- Control de pagos y facturación
+- Programación de clases grupales
+- Gestión de instalaciones y equipamiento
+- Reportes financieros y operativos
+- Comunicación masiva con socios
+- CRM para prospectos
 
-### Aplicación Hija (Cliente)
-Una aplicación de escritorio que requiere autenticación contra el servidor Madre antes de desbloquear su funcionalidad.
+### 📱 Aplicación Hija (Socios)
+Aplicación de escritorio para los socios del gimnasio que permite:
+- Ver y gestionar su membresía
+- Reservar clases grupales
+- Consultar horarios y disponibilidad
+- Comunicarse con el gimnasio
+- Seguimiento de asistencia y progreso
+- Acceso a contenido de entrenamiento general
 
-**Archivos:**
-- `hija_comms.py` - Módulo de comunicaciones con la API Madre
-- `hija_views.py` - Componentes de la interfaz gráfica
-- `hija_main.py` - Punto de entrada y controlador principal
+## 🎯 Enfoque del Sistema
 
-## Requisitos del Sistema
+### ✅ El Sistema ES:
+- Sistema de gestión administrativa de gimnasio
+- Plataforma de venta de paquetes de servicios (membresías)
+- Herramienta de control de asistencia y reservas
+- Sistema de comunicación gimnasio-socios
+- Plataforma de análisis de negocio
 
+### ❌ El Sistema NO ES:
+- Plataforma de entrenamiento personalizado 1-a-1
+- Sistema de coaching personal intensivo
+- App centrada en entrenadores personales individuales
+
+El gimnasio vende **paquetes de servicios** que incluyen acceso a instalaciones, clases grupales, y servicios adicionales opcionales (spa, nutrición, etc.). Los socios pueden seguir programas de entrenamiento generales sugeridos, pero el enfoque principal es la **gestión eficiente del gimnasio como negocio**.
+
+## 🚀 Inicio Rápido
+
+### Requisitos
 - Python 3.8 o superior
 - Windows (recomendado) o Linux/macOS
-- Conexión de red entre equipos Madre e Hija
+- Conexión de red entre servidor y clientes
 
-## Instalación
+### Instalación
 
-### 1. Instalar Python
-Descarga e instala Python desde [python.org](https://www.python.org/downloads/)
-
-### 2. Clonar o descargar el repositorio
+#### 1. Clonar el repositorio
 ```bash
 git clone <url-del-repositorio>
 cd GYM
 ```
 
-### 3. Instalar dependencias
+#### 2. Instalar dependencias
 
-**Para la Aplicación Madre:**
+**Para la Aplicación Madre (Administración):**
 ```bash
 pip install -r requirements_madre.txt
 ```
 
-**Para la Aplicación Hija:**
+**Para la Aplicación Hija (Socios):**
 ```bash
 pip install -r requirements_hija.txt
 ```
 
-### 4. Configuración (Opcional)
-
-El sistema utiliza variables de entorno para su configuración. Puedes crear un archivo `.env` para personalizar los valores:
-
+#### 3. Configuración (Opcional)
 ```bash
-# Copiar el archivo de ejemplo
 cp config/.env.example .env
-
-# Editar con tus valores personalizados
-nano .env  # o usa tu editor preferido
+# Editar .env con tu configuración
 ```
 
-**Variables de configuración principales:**
+**Variables principales:**
+- `MADRE_HOST`: Host del servidor (default: 0.0.0.0)
+- `MADRE_PORT`: Puerto del servidor (default: 8000)
+- `DB_PATH`: Ruta de la base de datos (default: data/gym_database.db)
 
-| Variable | Descripción | Valor por defecto |
-|----------|-------------|-------------------|
-| `MADRE_HOST` | Host del servidor Madre | `0.0.0.0` |
-| `MADRE_PORT` | Puerto del servidor Madre | `8000` |
-| `MADRE_BASE_URL` | URL del servidor (para Hija) | `http://127.0.0.1:8000` |
-| `DB_PATH` | Ruta de la base de datos | `data/gym_database.db` |
-| `LOG_LEVEL` | Nivel de logging | `INFO` |
+### Uso
 
-> 💡 **Nota**: Si no creas un archivo `.env`, el sistema usará los valores por defecto.
-
-## Uso
-
-### Iniciar la Aplicación Madre
-
-1. Ejecuta el archivo principal:
+#### Iniciar Aplicación Madre (Administración)
 ```bash
 python madre_main.py
 ```
 
-2. Se abrirá la ventana de gestión con dos pestañas:
-   - **Gestión de Usuarios**: Habilita/deshabilita el acceso para usuarios
-   - **Sincronización de Contenido**: Publica contenido para las aplicaciones Hija
+La interfaz administrativa se abrirá con acceso a:
+- Gestión de socios
+- Control de membresías y pagos
+- Programación de clases
+- Reportes y estadísticas
 
-3. El servidor API estará disponible en `http://0.0.0.0:8000`
+El servidor API estará disponible en `http://0.0.0.0:8000`
 
-### Iniciar la Aplicación Hija
-
-1. **IMPORTANTE**: Antes de ejecutar, configura la URL del servidor Madre:
-
-**Opción A (Recomendada): Usar variables de entorno**
+#### Iniciar Aplicación Hija (Socios)
 ```bash
-# Crear archivo .env
-echo "MADRE_BASE_URL=http://192.168.1.100:8000" > .env
-```
+# Configurar URL del servidor
+echo "MADRE_BASE_URL=http://IP_DEL_SERVIDOR:8000" > .env
 
-**Opción B: Editar directamente (no recomendado)**
-Edita `hija_comms.py` y modifica la línea:
-```python
-MADRE_BASE_URL = "http://127.0.0.1:8000"
-```
-Reemplaza `127.0.0.1` con la dirección IP real de la máquina donde se ejecuta la Aplicación Madre.
-
-2. Ejecuta el archivo principal:
-```bash
+# Ejecutar aplicación
 python hija_main.py
 ```
 
-3. Ingresa un nombre de usuario en la pantalla de inicio:
-   - Usuarios predefinidos: `usuario_alfa`, `usuario_beta`, `usuario_gamma`
-   - Por defecto, `usuario_alfa` y `usuario_beta` tienen acceso habilitado
-   - `usuario_gamma` tiene acceso deshabilitado
+Los socios pueden autenticarse con sus credenciales para:
+- Ver su información de membresía
+- Reservar clases
+- Consultar horarios
+- Comunicarse con el gimnasio
 
-4. Una vez autenticado, usa el botón "Sincronizar con la Madre" para obtener contenido actualizado
+## 👥 Usuarios de Prueba
 
-## Usuarios Predefinidos
+Para poblar la base de datos con usuarios de prueba:
+```bash
+python populate_db.py
+```
 
-La aplicación incluye tres usuarios de prueba con **datos completos**:
+**Usuarios predefinidos:**
+| Usuario | Contraseña | Tipo | Estado |
+|---------|-----------|------|--------|
+| `admin_gym` | `admin123` | Administrador | Activo |
+| `juan_perez` | `gym2024` | Socio | Activo |
+| `maria_lopez` | `fit2024` | Socio | Activo |
+| `carlos_rodriguez` | `trainer123` | Socio | Bloqueado |
 
-| Usuario | Contraseña | Permiso | Equipo |
-|---------|-----------|---------|--------|
-| `juan_perez` | `gym2024` | ✅ Habilitado | Equipo A - Fitness Avanzado |
-| `maria_lopez` | `fit2024` | ✅ Habilitado | Equipo B - Cardio y Resistencia |
-| `carlos_rodriguez` | `trainer123` | ❌ **BLOQUEADO** | Equipo C - Principiantes |
-
-**Cada usuario incluye:**
-- Foto de perfil
-- Datos personales completos (email, teléfono, equipo)
-- Cronograma de entrenamiento mensual detallado
-- Galería de fotos personal con descripciones
-
-> 💡 **Nota**: Para crear los usuarios y poblar la base de datos, ejecutar: `python populate_db.py`
-
-## Características Principales
-
-### Aplicación Madre
-- ✅ Panel de gestión con pestañas
-- ✅ **Base de datos SQLite persistente** (NUEVO)
-- ✅ Gestión de permisos de usuarios en tiempo real
-- ✅ **Gestión individual de usuarios con detalles completos** (NUEVO)
-- ✅ **Sincronización masiva de múltiples usuarios** (NUEVO)
-- ✅ Publicación de contenido para sincronización
-- ✅ Servidor API REST concurrente
-- ✅ Interfaz gráfica moderna y responsiva
-- ✅ **Logging estructurado con rotación de archivos** (NUEVO v3.1)
-- ✅ **Configuración mediante variables de entorno** (NUEVO v3.1)
-- ✅ **Health check endpoint para monitoreo** (NUEVO v3.1)
-
-### Aplicación Hija
-- ✅ **Autenticación con contraseña** (NUEVO)
-- ✅ **Auto-login con credenciales guardadas** (NUEVO)
-- ✅ **Validación de sincronización cada 72 horas** (NUEVO)
-- ✅ **Sincronización automática en segundo plano** (NUEVO)
-  - Cada 5 minutos inicialmente
-  - Cada 30 minutos tras primera sync exitosa
-- ✅ **Interfaz con pestañas**: Perfil, Cronograma, Galería, Mensajes (NUEVO)
-- ✅ Interfaz de inicio de sesión intuitiva
-- ✅ Sincronización de contenido desde la Madre
-- ✅ Manejo robusto de errores de conexión
-- ✅ Diseño modular y escalable
-- ✅ **Retry logic con exponential backoff** (NUEVO v3.1)
-- ✅ **Logging estructurado** (NUEVO v3.1)
-- ✅ **Configuración centralizada** (NUEVO v3.1)
-
-> 📖 **Ver documentación completa de nuevas funcionalidades en** [`NUEVAS_FUNCIONALIDADES.md`](NUEVAS_FUNCIONALIDADES.md)
-
-## Arquitectura Técnica
-
-### Flujo de Autenticación
-1. La Hija envía una petición POST a `/autorizar` con el nombre de usuario
-2. La Madre verifica el usuario y su permiso de acceso
-3. Si es aprobado, la Hija desbloquea su funcionalidad principal
-
-### Flujo de Sincronización
-1. La Hija envía una petición GET a `/sincronizar_datos` con su usuario
-2. La Madre verifica el usuario y devuelve los datos de sincronización
-3. La Hija actualiza su interfaz con el contenido recibido
+## 🏗️ Arquitectura Técnica
 
 ### Tecnologías Utilizadas
-- **GUI**: CustomTkinter (interfaz moderna sobre Tkinter)
-- **API Server**: FastAPI (framework web de alto rendimiento)
-- **HTTP Client**: requests (biblioteca estándar para peticiones HTTP)
-- **Concurrencia**: threading (ejecución simultánea de GUI y servidor)
-- **Validación**: Pydantic (modelos de datos con validación automática)
-- **Logging**: Python logging module con RotatingFileHandler
-- **Database**: SQLite3 con thread-safety
-- **Configuration**: Environment variables con fallback a defaults
+- **GUI**: CustomTkinter (interfaz moderna)
+- **API Server**: FastAPI (REST API de alto rendimiento)
+- **Database**: SQLite (persistencia de datos)
+- **HTTP Client**: requests
+- **Logging**: Python logging con rotación de archivos
+- **Concurrencia**: threading para servidor y GUI
 
-### Estructura del Proyecto (v3.1)
-
+### Estructura del Proyecto
 ```
 GYM/
-├── madre_main.py           # Punto de entrada Madre
-├── madre_server.py         # API REST con FastAPI
-├── madre_gui.py            # Interfaz gráfica Madre
-├── madre_db.py             # Capa de base de datos
-├── hija_main.py            # Punto de entrada Hija
-├── hija_comms.py           # Comunicaciones HTTP
-├── hija_views.py           # Componentes GUI Hija
-├── shared/                 # Módulos compartidos
-│   ├── constants.py        # Constantes centralizadas
-│   └── logger.py           # Configuración de logging
-├── config/                 # Configuración
-│   ├── .env.example        # Plantilla de configuración
-│   └── settings.py         # Carga de variables de entorno
-├── data/                   # Datos persistentes
-│   ├── gym_database.db     # Base de datos SQLite
-│   └── hija_local/         # Datos locales de Hija
-├── logs/                   # Archivos de log
-│   ├── madre_main.log
-│   ├── madre_server.log
-│   ├── madre_db.log
-│   ├── hija_main.log
-│   └── hija_comms.log
-└── requirements_*.txt      # Dependencias
+├── madre_main.py              # Punto de entrada administración
+├── madre_server.py            # API REST
+├── madre_gui.py               # Interfaz administrativa
+├── madre_db.py                # Capa de base de datos
+├── hija_main.py               # Punto de entrada socios
+├── hija_comms.py              # Comunicaciones HTTP
+├── hija_views.py              # Interfaz de socios
+├── shared/                    # Módulos compartidos
+│   ├── constants.py
+│   └── logger.py
+├── config/                    # Configuración
+│   ├── .env.example
+│   └── settings.py
+├── data/                      # Base de datos
+│   └── gym_database.db
+└── requirements_*.txt         # Dependencias
 ```
 
-### Logs y Monitoreo (v3.1)
+## 🔐 Seguridad
 
-El sistema ahora incluye logging estructurado con:
-- **Niveles**: DEBUG, INFO, WARNING, ERROR, CRITICAL
-- **Rotación**: Archivos de 10MB con 5 backups
-- **Ubicación**: Directorio `logs/` (creado automáticamente)
-- **Formato**: `[timestamp] - [module] - [level] - [message]`
+### Implementaciones Actuales
+- ✅ Contraseñas con hash SHA256
+- ✅ Base de datos SQLite persistente
+- ✅ Validación de permisos en servidor
+- ✅ Thread-safety en operaciones de BD
+- ✅ Logging de auditoría
 
-**Ver logs en tiempo real:**
+### Recomendaciones para Producción
+- 🔒 Migrar a bcrypt/argon2 para contraseñas
+- 🔐 Implementar JWT para sesiones
+- 🔒 Añadir comunicación HTTPS/SSL
+- 🔒 Rate limiting en API
+- 🔐 Migrar a PostgreSQL con SSL
+
+## 📊 Funcionalidades Principales
+
+### Para Administración
+- ✅ Gestión completa de socios
+- ✅ Control de membresías y pagos
+- ✅ Programación de clases grupales
+- ✅ Gestión de instalaciones
+- ✅ Reportes financieros
+- ✅ Comunicación masiva
+- ✅ Sistema de reservas
+- ✅ CRM para prospectos
+
+### Para Socios
+- ✅ Autenticación segura
+- ✅ Perfil personal
+- ✅ Reserva de clases
+- ✅ Seguimiento de asistencia
+- ✅ Comunicación con gimnasio
+- ✅ Sincronización automática
+- ✅ Información de membresía
+
+## 📈 Roadmap
+
+Ver el archivo `GYM_MANAGEMENT_FEATURES.md` para una lista completa de funcionalidades planificadas, incluyendo:
+- Control de acceso físico con torniquetes
+- Integración con pasarelas de pago
+- App móvil para socios
+- Sistema de análisis predictivo
+- Integración con wearables
+- Reportes avanzados de negocio
+
+## 🔧 Desarrollo
+
+### Testing
 ```bash
-# Linux/macOS
-tail -f logs/madre_server.log
-
-# Windows PowerShell
-Get-Content logs/madre_server.log -Wait -Tail 10
+python test_system.py
+python test_messaging.py
 ```
 
-**Health Check Endpoint:**
+### Logging
+Los logs se guardan en el directorio `logs/`:
+- `madre_main.log` - Aplicación madre
+- `madre_server.log` - Servidor API
+- `hija_main.log` - Aplicación hija
+
+### Health Check
 ```bash
 curl http://localhost:8000/health
 ```
-Respuesta:
-```json
-{
-  "status": "online",
-  "version": "3.1.0",
-  "database_status": "healthy"
-}
-```
 
-## Distribución
+## 📚 Documentación Adicional
 
-### Crear ejecutable para Windows
-Para distribuir la aplicación Hija sin requerir Python:
+- `GYM_MANAGEMENT_FEATURES.md` - Funcionalidades detalladas del sistema
+- `SETUP.md` - Guía de instalación paso a paso
+- `config/.env.example` - Variables de configuración disponibles
 
-```bash
-pip install pyinstaller
-pyinstaller --onefile --windowed hija_main.py
-```
+## 📄 Licencia
 
-El ejecutable estará en la carpeta `dist/`
+Este proyecto es un sistema de gestión de gimnasios.
 
-## Extensiones Futuras
+## 🤝 Soporte
 
-- 🔒 Implementar OAuth2 con JWT para autenticación segura
-- 💾 Migrar de base de datos en memoria a SQLite/PostgreSQL
-- 🔐 Añadir comunicación HTTPS/SSL
-- 📦 Empaquetado con PyInstaller para distribución
-- 🎨 Expansión de la GUI con más funcionalidades
-- 📊 Dashboard con métricas y estadísticas
-
-## Seguridad
-
-### Implementaciones Actuales ✅
-- ✅ Contraseñas con hash SHA256
-- ✅ Base de datos persistente (SQLite)
-- ✅ Validación de permisos en servidor
-- ✅ Validación de sincronización (72 horas)
-- ✅ Thread-safety en operaciones de BD
-
-### Mejoras Recomendadas para Producción ⚠️
-- 🔒 Migrar a bcrypt/argon2 para contraseñas
-- 🔒 Implementar JWT para sesiones
-- 🔐 Añadir comunicación HTTPS/SSL
-- 🔐 Usar keyring para credenciales locales
-- 🔒 Implementar rate limiting en API
-- 🔐 Migrar a PostgreSQL con SSL
-
-> ⚠️ **ADVERTENCIA**: Si bien el sistema incluye seguridad básica, se recomienda implementar las mejoras listadas antes de usar en producción.
-
-## Soporte
-
-Para problemas o preguntas sobre el sistema, consulta la documentación técnica completa en `Desarrollo Python Apps Madre-Hija Remotas.txt`
-
-## Licencia
-
-Este proyecto es un prototipo educativo y de demostración.
+Para problemas o preguntas, consulta la documentación o abre un issue en el repositorio.

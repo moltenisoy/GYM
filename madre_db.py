@@ -1,10 +1,10 @@
 # madre_db.py
 #
-# Base de datos SQLite real para el sistema Madre-Hija.
-# Reemplaza la simulación en memoria con persistencia real.
+# Base de datos SQLite para el Sistema de Gestión del Gimnasio.
+# Gestiona información de socios, membresías, clases y operaciones del gimnasio.
 #
 # NOTA SOBRE CONCURRENCIA: Se usa threading.Lock para garantizar
-# thread-safety entre la GUI y el servidor API.
+# thread-safety entre la GUI administrativa y el servidor API.
 
 import sqlite3
 import threading
