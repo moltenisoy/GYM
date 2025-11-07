@@ -1,4 +1,6 @@
-# Setup Rápido - Sistema GYM v2.0
+# Setup Rápido - Sistema de Gestión del Gimnasio
+
+Guía de instalación para el Sistema de Gestión del Gimnasio.
 
 ## 🚀 Instalación en 3 Pasos
 
@@ -57,39 +59,42 @@ python test_system.py
 
 ## 🎮 Uso del Sistema
 
-### Iniciar Aplicación Madre (Servidor)
+### Iniciar Aplicación Madre (Administración del Gimnasio)
 
 ```bash
 python madre_main.py
 ```
 
 Se abrirá:
-- 🖥️ Ventana GUI de gestión
+- 🖥️ Panel de Administración del Gimnasio
 - 🌐 Servidor API en http://localhost:8000
 
 **Funcionalidades:**
-- Gestión de Usuarios (ver detalles, cambiar permisos)
-- Sincronización de Contenido (mensajes globales)
-- Sincronización Masiva (actualizar múltiples usuarios)
+- Gestión de Socios (ver detalles, cambiar permisos de acceso)
+- Sincronización de Contenido (mensajes y anuncios para socios)
+- Sincronización Masiva (actualizar múltiples socios)
 
-### Iniciar Aplicación Hija (Cliente)
+### Iniciar Aplicación Hija (Portal del Socio)
 
 ```bash
 python hija_main.py
 ```
 
-**Primera vez**: Se muestra pantalla de login
+**Primera vez**: Se muestra pantalla de inicio de sesión
 
-**Credenciales de prueba:**
+**Credenciales de socios de prueba:**
 ```
 Usuario: juan_perez
 Contraseña: gym2024
+(Socio con membresía activa)
 
 Usuario: maria_lopez
 Contraseña: fit2024
+(Socio con membresía activa)
 
 Usuario: carlos_rodriguez (BLOQUEADO)
 Contraseña: trainer123
+(Membresía suspendida)
 ```
 
 **Próximas veces**: Auto-login automático
@@ -100,21 +105,21 @@ Contraseña: trainer123
 
 ### En la Aplicación Madre
 
-#### Pestaña "Gestión de Usuarios"
-- Lista de todos los usuarios
+#### Pestaña "Gestión de Socios"
+- Lista de todos los socios del gimnasio
 - Botón "Ver Detalles" → Ventana emergente con:
   - Información personal completa
-  - Cronograma de entrenamiento mensual
-  - Galería de fotos personal
-- Switch "Acceso Habilitado" → Cambio inmediato de permisos
+  - Programa de entrenamiento asignado
+  - Galería de fotos de progreso
+- Switch "Acceso Habilitado" → Control de acceso a instalaciones
 
 #### Pestaña "Sincronización de Contenido"
-- Editor de texto para mensajes globales
-- Botón "Publicar Nuevo Contenido"
-- Auto-incremento de versión
+- Editor de texto para mensajes y anuncios globales
+- Botón "Publicar Nuevo Contenido" para enviar a socios
+- Auto-incremento de versión de contenido
 
 #### Pestaña "Sincronización Masiva"
-- Lista de usuarios con checkboxes
+- Lista de socios con checkboxes
 - Botones:
   - "Seleccionar Todos"
   - "Deseleccionar Todos"
@@ -123,28 +128,29 @@ Contraseña: trainer123
 ### En la Aplicación Hija
 
 #### Pestaña "Perfil"
-- Información personal del usuario
-- Email, teléfono, equipo
-- Fecha de registro
+- Información personal del socio
+- Email, teléfono, grupo de entrenamiento
+- Fecha de registro en el gimnasio
+- Estado de membresía
 
 #### Pestaña "Cronograma"
-- Programa de entrenamiento mensual
+- Programa de entrenamiento sugerido mensual
 - Desglose día por día:
-  - Ejercicios
+  - Ejercicios recomendados
   - Descripción detallada
   - Duración en minutos
 - Objetivo del programa
-- Notas del entrenador
+- Notas del gimnasio
 
 #### Pestaña "Galería"
-- Fotos personales
+- Fotos de progreso personal
 - Descripciones
 - Fechas de carga
 
 #### Pestaña "Mensajes"
-- Mensajes del gimnasio
-- Anuncios importantes
-- Actualizaciones
+- Mensajes y anuncios del gimnasio
+- Información sobre clases y eventos
+- Actualizaciones de horarios
 
 #### Barra de Estado
 - Muestra estado de sincronización

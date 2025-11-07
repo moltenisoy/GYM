@@ -1,9 +1,9 @@
 # madre_main.py
 #
-# Punto de entrada principal para la Aplicación Madre.
+# Punto de entrada principal para la Aplicación Madre (Administración del Gimnasio).
 # Este script orquesta el lanzamiento de los dos componentes principales:
-# 1. El servidor FastAPI (en un hilo de fondo).
-# 2. La aplicación GUI de CustomTkinter (en el hilo principal).
+# 1. El servidor FastAPI (en un hilo de fondo) - API para comunicación con socios.
+# 2. La aplicación GUI de CustomTkinter (en el hilo principal) - Panel de administración.
 
 import threading
 import uvicorn
@@ -42,7 +42,7 @@ def iniciar_servidor() -> None:
 
 
 if __name__ == "__main__":
-    logger.info("=== Iniciando Aplicación Madre ===")
+    logger.info("=== Iniciando Sistema de Gestión del Gimnasio (Aplicación Madre) ===")
     logger.info(f"Configuración: {settings}")
 
     try:

@@ -1,8 +1,9 @@
 # hija_views.py
 #
-# Define las "vistas" o "páginas" de la aplicación Hija.
-# Estas clases son componentes puros de GUI (CustomTkinter) que
-# no contienen lógica de negocio o de red.
+# Define las "vistas" o "páginas" de la Aplicación de Socios (Aplicación Hija).
+# Estas clases son componentes puros de GUI (CustomTkinter) que permiten a los
+# socios del gimnasio acceder a su información, reservar clases, y gestionar su membresía.
+# No contienen lógica de negocio o de red.
 # Reciben un 'controlador' o 'comando' para notificar acciones del usuario.
 
 import customtkinter
@@ -25,7 +26,7 @@ class LoginFrame(customtkinter.CTkFrame):
 
         lbl_title = customtkinter.CTkLabel(
             card_frame,
-            text="Acceso de Cliente",
+            text="Portal del Socio",
             font=customtkinter.CTkFont(size=20, weight="bold")
         )
         lbl_title.pack(pady=(20, 10), padx=30)
