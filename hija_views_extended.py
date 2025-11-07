@@ -167,8 +167,16 @@ class ExerciseTrackingView(customtkinter.CTkScrollableFrame):
     
     def _show_error(self, message: str):
         """Muestra un mensaje de error."""
-        # TODO: Implement error display
-        print(f"Error: {message}")
+        # Display error in a label or use logging
+        error_lbl = customtkinter.CTkLabel(
+            self,
+            text=f"⚠️ {message}",
+            text_color="red",
+            font=customtkinter.CTkFont(size=14)
+        )
+        error_lbl.pack(pady=10)
+        # Auto-remove after 5 seconds
+        self.after(5000, error_lbl.destroy)
     
     def update_history(self, history: List[Dict[str, Any]]):
         """Actualiza el historial de ejercicios."""

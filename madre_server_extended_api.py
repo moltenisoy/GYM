@@ -3,7 +3,7 @@
 # Extended API endpoints for features 1-16 from SUGERENCIAS_FUNCIONALIDADES.md
 # This module contains FastAPI routers for all new functionalities
 
-from fastapi import APIRouter, Query, HTTPException, Body
+from fastapi import APIRouter, Query, HTTPException, Body, Depends
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -46,6 +46,19 @@ from shared.logger import setup_logger
 
 logger = setup_logger(__name__, log_file="madre_server_extended_api.log")
 
+
+# ============================================================================
+# DEPENDENCY: User Validation Helper
+# ============================================================================
+
+async def get_user_from_username(username: str) -> Dict[str, Any]:
+    """Dependency to get and validate user from username."""
+    user = madre_db.get_user(username)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return user
+
+
 # ============================================================================
 # FEATURE 1: Real-time Exercise Tracking
 # ============================================================================
@@ -66,9 +79,7 @@ class ExerciseSessionRequest(BaseModel):
 @router_exercise_tracking.post("/log-session")
 async def log_session(request: ExerciseSessionRequest):
     """Registra una sesión de ejercicio."""
-    user = madre_db.get_user(request.username)
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    user = await get_user_from_username(request.username)
     
     session_id = log_exercise_session(
         user['id'], request.exercise_name, request.sets, request.reps,
