@@ -1176,7 +1176,7 @@ def book_class(user_id: int, schedule_id: int, fecha_clase: str) -> tuple[bool, 
             return False, "Error: Ya existe una reserva"
         except Exception as e:
             logger.error(f"Error booking class: {e}", exc_info=True)
-            return False, f"Error al reservar: {str(e)}"
+            return False, "Error al procesar la reserva"
 
 
 def cancel_booking(booking_id: int) -> tuple[bool, str]:
@@ -1218,7 +1218,7 @@ def cancel_booking(booking_id: int) -> tuple[bool, str]:
                 return False, "No se pudo cancelar la reserva"
         except Exception as e:
             logger.error(f"Error cancelling booking: {e}", exc_info=True)
-            return False, f"Error al cancelar: {str(e)}"
+            return False, "Error al procesar la cancelación"
 
 
 def notify_waitlist(conn, cursor, schedule_id: int, fecha_clase: str):
@@ -1283,7 +1283,7 @@ def add_to_waitlist(user_id: int, schedule_id: int, fecha_clase: str) -> tuple[b
             return True, "Agregado a lista de espera"
         except Exception as e:
             logger.error(f"Error adding to waitlist: {e}", exc_info=True)
-            return False, f"Error: {str(e)}"
+            return False, "Error al agregar a lista de espera"
 
 
 def get_user_bookings(user_id: int, fecha_desde: str = None) -> List[Dict[str, Any]]:
@@ -1340,7 +1340,7 @@ def rate_class(user_id: int, class_id: int, schedule_id: int, fecha_clase: str,
             return True, "Calificación enviada exitosamente"
         except Exception as e:
             logger.error(f"Error rating class: {e}", exc_info=True)
-            return False, f"Error: {str(e)}"
+            return False, "Error al enviar calificación"
 
 
 # ============================================================================
@@ -1425,7 +1425,7 @@ def reserve_equipment(user_id: int, equipment_id: int, fecha_reserva: str,
             return True, "Reserva confirmada exitosamente"
         except Exception as e:
             logger.error(f"Error reserving equipment: {e}", exc_info=True)
-            return False, f"Error: {str(e)}"
+            return False, "Error al reservar equipo"
 
 
 # ============================================================================
@@ -1560,7 +1560,7 @@ def checkin_user(user_id: int, location: str = "entrada") -> tuple[bool, str]:
             return True, "Check-in exitoso"
         except Exception as e:
             logger.error(f"Error checking in user: {e}", exc_info=True)
-            return False, f"Error: {str(e)}"
+            return False, "Error al registrar check-in"
 
 
 # ============================================================================
