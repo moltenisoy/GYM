@@ -738,12 +738,12 @@ class MainAppFrame(customtkinter.CTkFrame):
                 anchor="e"
             )
             lbl_time.pack(padx=10, pady=(0, 5), anchor="e")
-    
+
     def _mostrar_ejercicios(self):
         """Muestra la vista de seguimiento de ejercicios."""
         self._switch_view("exercise")
         self._clear_content()
-        
+
         lbl_placeholder = customtkinter.CTkLabel(
             self.content_frame,
             text="💪 Seguimiento de Ejercicios\n\nEsta funcionalidad estará disponible próximamente.\n\nPodrás registrar tus ejercicios en tiempo real,\nver tu historial y seguir tu progreso.",
@@ -751,12 +751,12 @@ class MainAppFrame(customtkinter.CTkFrame):
             justify="center"
         )
         lbl_placeholder.pack(expand=True)
-    
+
     def _mostrar_plan_entrenamiento(self):
         """Muestra la vista del plan de entrenamiento interactivo."""
         self._switch_view("training")
         self._clear_content()
-        
+
         lbl_placeholder = customtkinter.CTkLabel(
             self.content_frame,
             text="🏋️ Plan de Entrenamiento Interactivo\n\nEsta funcionalidad estará disponible próximamente.\n\nPodrás ver tu calendario de entrenamientos,\nmarcar ejercicios completados y recibir notificaciones.",
@@ -764,12 +764,12 @@ class MainAppFrame(customtkinter.CTkFrame):
             justify="center"
         )
         lbl_placeholder.pack(expand=True)
-    
+
     def _mostrar_medidas(self):
         """Muestra la vista de medidas corporales."""
         self._switch_view("measurements")
         self._clear_content()
-        
+
         lbl_placeholder = customtkinter.CTkLabel(
             self.content_frame,
             text="📏 Seguimiento de Medidas Corporales\n\nEsta funcionalidad estará disponible próximamente.\n\nPodrás registrar tu peso, medidas, porcentaje de grasa,\nmasa muscular y fotos de progreso.",
@@ -777,12 +777,12 @@ class MainAppFrame(customtkinter.CTkFrame):
             justify="center"
         )
         lbl_placeholder.pack(expand=True)
-    
+
     def _mostrar_nutricion(self):
         """Muestra la vista del plan nutricional."""
         self._switch_view("nutrition")
         self._clear_content()
-        
+
         lbl_placeholder = customtkinter.CTkLabel(
             self.content_frame,
             text="🍎 Plan Nutricional Personalizado\n\nEsta funcionalidad estará disponible próximamente.\n\nPodrás ver tu plan de alimentación, recetas,\nlista de compras y registrar tu ingesta de agua.",
@@ -790,12 +790,12 @@ class MainAppFrame(customtkinter.CTkFrame):
             justify="center"
         )
         lbl_placeholder.pack(expand=True)
-    
+
     def _mostrar_dashboard(self):
         """Muestra el dashboard personal con estadísticas."""
         self._switch_view("dashboard")
         self._clear_content()
-        
+
         lbl_placeholder = customtkinter.CTkLabel(
             self.content_frame,
             text="📊 Dashboard Personal\n\nEsta funcionalidad estará disponible próximamente.\n\nPodrás ver resúmenes de entrenamientos, calorías quemadas,\ntu racha de días consecutivos y gráficos de progreso.",

@@ -28,7 +28,7 @@ def iniciar_servidor() -> None:
     Raises:
         Exception: Si el servidor no puede iniciarse
     """
-    logger.info(f"Iniciando servidor FastAPI/uvicorn en http://{settings.HOST}:{settings.PORT}")
+    logger.info("Iniciando servidor FastAPI/uvicorn en http://%s:%s", settings.HOST, settings.PORT)
     try:
         # Convert log level string to uvicorn log level
         uvicorn_log_level = settings.LOG_LEVEL.lower()
@@ -37,13 +37,13 @@ def iniciar_servidor() -> None:
 
         uvicorn.run(app_servidor, host=settings.HOST, port=settings.PORT, log_level=uvicorn_log_level)
     except Exception as e:
-        logger.error(f"Error al iniciar el servidor uvicorn: {e}", exc_info=True)
+        logger.error("Error al iniciar el servidor uvicorn: %s", e, exc_info=True)
         raise
 
 
 if __name__ == "__main__":
     logger.info("=== Iniciando Sistema de Gestión del Gimnasio (Aplicación Madre) ===")
-    logger.info(f"Configuración: {settings}")
+    logger.info("Configuración: %s", settings)
 
     try:
         # 1. Configurar el hilo del servidor
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         logger.info("Interrupción de teclado recibida. Cerrando aplicación...")
     except Exception as e:
-        logger.critical(f"Error fatal en la aplicación: {e}", exc_info=True)
+        logger.critical("Error fatal en la aplicación: %s", e, exc_info=True)
         raise
     finally:
         logger.info("=== Aplicación Madre finalizada ===")
