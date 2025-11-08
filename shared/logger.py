@@ -1,6 +1,6 @@
 """
-Centralized logging configuration for the GYM system.
-Provides structured logging with file rotation and console output.
+Configuración centralizada de logging para el sistema GYM.
+Proporciona logging estructurado con rotación de archivos y salida a consola.
 """
 
 import logging
@@ -23,41 +23,41 @@ def setup_logger(
     console_output: bool = True
 ) -> logging.Logger:
     """
-    Set up a logger with file rotation and optional console output.
+    Configura un logger con rotación de archivos y salida opcional a consola.
 
     Args:
-        name: Name of the logger (usually module name)
-        log_file: Optional log file name (without path). If None, uses {name}.log
-        level: Logging level (default: INFO)
-        console_output: Whether to also output to console (default: True)
+        name: Nombre del logger (usualmente nombre del módulo)
+        log_file: Nombre opcional del archivo de log (sin ruta). Si es None, usa {name}.log
+        level: Nivel de logging (por defecto: INFO)
+        console_output: Si también debe mostrar salida en consola (por defecto: True)
 
     Returns:
-        Configured logger instance
+        Instancia de logger configurada
 
-    Example:
+    Ejemplo:
         >>> logger = setup_logger(__name__)
-        >>> logger.info("Application started")
+        >>> logger.info("Aplicación iniciada")
     """
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    # Prevent duplicate handlers
+    # Prevenir handlers duplicados
     if logger.handlers:
         return logger
 
-    # Create logs directory if it doesn't exist
+    # Crear directorio de logs si no existe
     log_dir = os.path.join(os.path.dirname(__file__), '..', LOG_DIR_NAME)
     os.makedirs(log_dir, exist_ok=True)
 
-    # Determine log file path
+    # Determinar ruta del archivo de log
     if log_file is None:
         log_file = f"{name}.log"
     log_path = os.path.join(log_dir, log_file)
 
-    # Create formatter
+    # Crear formateador
     formatter = logging.Formatter(LOG_FORMAT, LOG_DATE_FORMAT)
 
-    # File handler with rotation
+    # Handler de archivo con rotación
     file_handler = RotatingFileHandler(
         log_path,
         maxBytes=LOG_FILE_MAX_BYTES,
@@ -68,7 +68,7 @@ def setup_logger(
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    # Console handler (optional)
+    # Handler de consola (opcional)
     if console_output:
         console_handler = logging.StreamHandler()
         console_handler.setLevel(level)
@@ -80,17 +80,17 @@ def setup_logger(
 
 def get_logger(name: str) -> logging.Logger:
     """
-    Get an existing logger by name, or create a new one if it doesn't exist.
+    Obtiene un logger existente por nombre, o crea uno nuevo si no existe.
 
     Args:
-        name: Name of the logger
+        name: Nombre del logger
 
     Returns:
-        Logger instance
+        Instancia de logger
 
-    Example:
+    Ejemplo:
         >>> logger = get_logger(__name__)
-        >>> logger.debug("Debug message")
+        >>> logger.debug("Mensaje de depuración")
     """
     logger = logging.getLogger(name)
     if not logger.handlers:

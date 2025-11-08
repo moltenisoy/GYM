@@ -19,10 +19,10 @@ from hija_views import LoginFrame, MainAppFrame
 from config.settings import get_hija_settings
 from shared.logger import setup_logger
 
-# Initialize logger
+# Inicializar logger
 logger = setup_logger(__name__, log_file="hija_main.log")
 
-# Load configuration
+# Cargar configuración
 settings = get_hija_settings()
 
 # Configuración inicial de apariencia

@@ -25,10 +25,10 @@ from shared.constants import (
     CREDENTIALS_FILENAME
 )
 
-# Initialize logger
+# Inicializar logger
 logger = setup_logger(__name__, log_file="hija_comms.log")
 
-# Load configuration
+# Cargar configuración
 settings = get_hija_settings()
 
 # Directorio para datos locales
@@ -58,15 +58,15 @@ class APICommunicator:
         self.base_url = base_url or settings.MADRE_BASE_URL
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
-        
+
         # Control de estado de conexión
         self.is_connected = False
         self.last_successful_request = None
         self.consecutive_failures = 0
-        
+
         os.makedirs(LOCAL_DATA_DIR, exist_ok=True)
         logger.info("APICommunicator initialized with base_url: %s", self.base_url)
-        
+
         # Realizar ping inicial para validar conexión
         self._check_connectivity()
 
@@ -91,7 +91,7 @@ class APICommunicator:
         except Exception as e:
             self.is_connected = False
             logger.warning("No se pudo establecer conexión con servidor madre: %s", e)
-        
+
         return False
 
     def _retry_request(
@@ -138,19 +138,19 @@ class APICommunicator:
 
                 response.raise_for_status()
                 logger.debug("Request successful: %s %s", method, url)
-                
+
                 # Actualizar estado de conexión exitosa
                 self.is_connected = True
                 self.last_successful_request = datetime.now()
                 self.consecutive_failures = 0
-                
+
                 return response
 
             except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
                 last_exception = e
                 self.consecutive_failures += 1
                 self.is_connected = False
-                
+
                 if attempt < max_retries - 1:
                     # Exponential backoff with jitter (random 0-1 second)
                     wait_time = (2 ** attempt) + random.uniform(0, 1)
@@ -159,7 +159,7 @@ class APICommunicator:
                         attempt + 1, max_retries, e, wait_time
                     )
                     time.sleep(wait_time)
-                    
+
                     # Intentar reconectar después de múltiples fallos
                     if self.consecutive_failures >= 2:
                         logger.info("Intentando reestablecer conexión...")
@@ -171,7 +171,7 @@ class APICommunicator:
             except requests.exceptions.HTTPError as e:
                 # Registrar error HTTP pero intentar mantener sesión
                 logger.error("HTTP error: %s", e)
-                
+
                 # Para errores 5xx del servidor, podemos reintentar
                 if e.response.status_code >= 500 and attempt < max_retries - 1:
                     wait_time = (2 ** attempt) + random.uniform(0, 1)
@@ -181,7 +181,7 @@ class APICommunicator:
                     )
                     time.sleep(wait_time)
                     continue
-                    
+
                 raise
 
         # Should not reach here, but just in case

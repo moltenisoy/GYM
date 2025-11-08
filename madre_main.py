@@ -12,10 +12,10 @@ from madre_server import app as app_servidor
 from config.settings import get_madre_settings
 from shared.logger import setup_logger
 
-# Initialize logger
+# Inicializar logger
 logger = setup_logger(__name__, log_file="madre_main.log")
 
-# Load configuration from environment
+# Cargar configuración desde variables de entorno
 settings = get_madre_settings()
 
 

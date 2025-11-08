@@ -16,10 +16,10 @@ import json
 from config.settings import get_madre_settings
 from shared.logger import setup_logger
 
-# Initialize logger
+# Inicializar logger
 logger = setup_logger(__name__, log_file="madre_db.log")
 
-# Load configuration
+# Cargar configuración
 settings = get_madre_settings()
 
 # Ruta de la base de datos (from configuration)

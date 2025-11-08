@@ -230,7 +230,7 @@ def demo_workout_log():
         data = response.json()
 
         if data["status"] == "success":
-            print(f"\n📊 Historial de Sentadillas:")
+            print("\n📊 Historial de Sentadillas:")
             for log in data["historial"]:
                 print(f"  Serie {log['serie']}: {log['peso']}kg × {log['repeticiones']} reps")
                 print(f"    Fecha: {log['fecha']}")

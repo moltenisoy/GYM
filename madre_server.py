@@ -14,7 +14,7 @@ import madre_db
 from shared.logger import setup_logger
 from shared.constants import APP_VERSION, APP_FEATURES, SYNC_REQUIRED_HOURS
 
-# Initialize logger
+# Inicializar logger
 logger = setup_logger(__name__, log_file="madre_server.log")
 
 # Crear la instancia de la aplicación FastAPI
