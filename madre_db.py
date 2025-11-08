@@ -184,6 +184,223 @@ def init_database() -> None:
                 )
             ''')
 
+            # Tabla de clases grupales
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS classes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nombre TEXT NOT NULL,
+                    descripcion TEXT,
+                    instructor TEXT,
+                    duracion INTEGER NOT NULL,
+                    capacidad_maxima INTEGER NOT NULL,
+                    intensidad TEXT,
+                    tipo TEXT,
+                    created_date TEXT,
+                    is_active INTEGER DEFAULT 1
+                )
+            ''')
+
+            # Tabla de horarios de clases
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS class_schedules (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    class_id INTEGER NOT NULL,
+                    instructor TEXT,
+                    dia_semana TEXT NOT NULL,
+                    hora_inicio TEXT NOT NULL,
+                    fecha_inicio TEXT NOT NULL,
+                    fecha_fin TEXT,
+                    recurrente INTEGER DEFAULT 1,
+                    sala TEXT,
+                    created_date TEXT,
+                    FOREIGN KEY (class_id) REFERENCES classes(id)
+                )
+            ''')
+
+            # Tabla de reservas de clases
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS class_bookings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    schedule_id INTEGER NOT NULL,
+                    fecha_clase TEXT NOT NULL,
+                    booking_date TEXT NOT NULL,
+                    status TEXT DEFAULT 'confirmed',
+                    checked_in INTEGER DEFAULT 0,
+                    checkin_date TEXT,
+                    cancellation_date TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id),
+                    FOREIGN KEY (schedule_id) REFERENCES class_schedules(id),
+                    UNIQUE(user_id, schedule_id, fecha_clase)
+                )
+            ''')
+
+            # Tabla de lista de espera
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS class_waitlist (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    schedule_id INTEGER NOT NULL,
+                    fecha_clase TEXT NOT NULL,
+                    added_date TEXT NOT NULL,
+                    notified_date TEXT,
+                    confirmation_deadline TEXT,
+                    status TEXT DEFAULT 'waiting',
+                    FOREIGN KEY (user_id) REFERENCES users(id),
+                    FOREIGN KEY (schedule_id) REFERENCES class_schedules(id)
+                )
+            ''')
+
+            # Tabla de calificaciones de clases
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS class_ratings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    class_id INTEGER NOT NULL,
+                    schedule_id INTEGER NOT NULL,
+                    fecha_clase TEXT NOT NULL,
+                    rating INTEGER NOT NULL,
+                    instructor_rating INTEGER,
+                    comentario TEXT,
+                    rating_date TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id),
+                    FOREIGN KEY (class_id) REFERENCES classes(id),
+                    FOREIGN KEY (schedule_id) REFERENCES class_schedules(id)
+                )
+            ''')
+
+            # Tabla de equipos y zonas
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS equipment_zones (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nombre TEXT NOT NULL,
+                    tipo TEXT NOT NULL,
+                    descripcion TEXT,
+                    cantidad INTEGER DEFAULT 1,
+                    duracion_slot INTEGER DEFAULT 60,
+                    reservable INTEGER DEFAULT 1,
+                    qr_code TEXT,
+                    ubicacion TEXT,
+                    created_date TEXT,
+                    is_active INTEGER DEFAULT 1
+                )
+            ''')
+
+            # Tabla de reservas de equipos/zonas
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS equipment_reservations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    equipment_id INTEGER NOT NULL,
+                    fecha_reserva TEXT NOT NULL,
+                    hora_inicio TEXT NOT NULL,
+                    hora_fin TEXT NOT NULL,
+                    booking_date TEXT NOT NULL,
+                    status TEXT DEFAULT 'confirmed',
+                    checked_in INTEGER DEFAULT 0,
+                    checkin_date TEXT,
+                    cancellation_date TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id),
+                    FOREIGN KEY (equipment_id) REFERENCES equipment_zones(id)
+                )
+            ''')
+
+            # Tabla de ejercicios
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS exercises (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nombre TEXT NOT NULL,
+                    descripcion TEXT,
+                    categoria TEXT,
+                    equipo_necesario TEXT,
+                    video_url TEXT,
+                    instrucciones TEXT,
+                    created_date TEXT
+                )
+            ''')
+
+            # Tabla de logs de entrenamiento
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS workout_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    exercise_id INTEGER NOT NULL,
+                    fecha TEXT NOT NULL,
+                    serie INTEGER NOT NULL,
+                    repeticiones INTEGER NOT NULL,
+                    peso REAL,
+                    unidad TEXT DEFAULT 'kg',
+                    notas TEXT,
+                    descanso_segundos INTEGER,
+                    log_date TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id),
+                    FOREIGN KEY (exercise_id) REFERENCES exercises(id)
+                )
+            ''')
+
+            # Tabla de tokens de check-in (QR/NFC)
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS checkin_tokens (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    token TEXT UNIQUE NOT NULL,
+                    token_type TEXT DEFAULT 'qr',
+                    generated_date TEXT NOT NULL,
+                    expires_date TEXT,
+                    is_active INTEGER DEFAULT 1,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+            ''')
+
+            # Tabla de historial de check-ins
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS checkin_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    checkin_date TEXT NOT NULL,
+                    checkout_date TEXT,
+                    checkin_method TEXT DEFAULT 'manual',
+                    location TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+            ''')
+
+            # Tabla de notificaciones
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    tipo TEXT NOT NULL,
+                    titulo TEXT NOT NULL,
+                    mensaje TEXT NOT NULL,
+                    data TEXT,
+                    created_date TEXT NOT NULL,
+                    read_date TEXT,
+                    is_read INTEGER DEFAULT 0,
+                    action_url TEXT,
+                    expires_date TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                )
+            ''')
+
+            # Tabla de preferencias de usuario
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS user_preferences (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    calendar_sync_enabled INTEGER DEFAULT 0,
+                    calendar_type TEXT,
+                    notification_class_reminder INTEGER DEFAULT 1,
+                    notification_waitlist INTEGER DEFAULT 1,
+                    notification_class_rating INTEGER DEFAULT 1,
+                    reminder_time_minutes INTEGER DEFAULT 60,
+                    auto_checkin_enabled INTEGER DEFAULT 0,
+                    updated_date TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id),
+                    UNIQUE(user_id)
+                )
+            ''')
+
             conn.commit()
             conn.close()
             logger.info("Database schema initialized successfully")
@@ -787,6 +1004,616 @@ def update_madre_server_sync(server_name: str) -> bool:
         success = cursor.rowcount > 0
         conn.close()
         return success
+
+
+# ============================================================================
+# GESTIÓN DE CLASES Y RESERVAS
+# ============================================================================
+
+def create_class(nombre: str, descripcion: str, instructor: str, duracion: int,
+                capacidad_maxima: int, intensidad: str = "media", tipo: str = "grupal") -> Optional[int]:
+    """Crea una nueva clase."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            created_date = datetime.now().isoformat()
+
+            cursor.execute('''
+                INSERT INTO classes (nombre, descripcion, instructor, duracion,
+                                   capacidad_maxima, intensidad, tipo, created_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (nombre, descripcion, instructor, duracion, capacidad_maxima,
+                  intensidad, tipo, created_date))
+
+            conn.commit()
+            class_id = cursor.lastrowid
+            conn.close()
+            logger.info(f"Class created: {nombre} (ID: {class_id})")
+            return class_id
+        except Exception as e:
+            logger.error(f"Error creating class: {e}", exc_info=True)
+            return None
+
+
+def get_all_classes(active_only: bool = True) -> List[Dict[str, Any]]:
+    """Obtiene todas las clases."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if active_only:
+            cursor.execute('SELECT * FROM classes WHERE is_active = 1 ORDER BY nombre')
+        else:
+            cursor.execute('SELECT * FROM classes ORDER BY nombre')
+
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+
+def get_class(class_id: int) -> Optional[Dict[str, Any]]:
+    """Obtiene una clase por ID."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT * FROM classes WHERE id = ?', (class_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return dict(row)
+        return None
+
+
+def create_class_schedule(class_id: int, instructor: str, dia_semana: str,
+                         hora_inicio: str, fecha_inicio: str, fecha_fin: str = None,
+                         recurrente: bool = True, sala: str = "") -> Optional[int]:
+    """Crea un horario para una clase."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            created_date = datetime.now().isoformat()
+
+            cursor.execute('''
+                INSERT INTO class_schedules (class_id, instructor, dia_semana, hora_inicio,
+                                            fecha_inicio, fecha_fin, recurrente, sala, created_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (class_id, instructor, dia_semana, hora_inicio, fecha_inicio,
+                  fecha_fin, 1 if recurrente else 0, sala, created_date))
+
+            conn.commit()
+            schedule_id = cursor.lastrowid
+            conn.close()
+            logger.info(f"Schedule created for class {class_id} (ID: {schedule_id})")
+            return schedule_id
+        except Exception as e:
+            logger.error(f"Error creating schedule: {e}", exc_info=True)
+            return None
+
+
+def get_class_schedules(class_id: int = None) -> List[Dict[str, Any]]:
+    """Obtiene horarios de clases."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if class_id:
+            cursor.execute('''
+                SELECT cs.*, c.nombre as class_nombre, c.capacidad_maxima, c.intensidad, c.tipo
+                FROM class_schedules cs
+                JOIN classes c ON cs.class_id = c.id
+                WHERE cs.class_id = ?
+                ORDER BY cs.dia_semana, cs.hora_inicio
+            ''', (class_id,))
+        else:
+            cursor.execute('''
+                SELECT cs.*, c.nombre as class_nombre, c.capacidad_maxima, c.intensidad, c.tipo
+                FROM class_schedules cs
+                JOIN classes c ON cs.class_id = c.id
+                WHERE c.is_active = 1
+                ORDER BY cs.dia_semana, cs.hora_inicio
+            ''')
+
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+
+def book_class(user_id: int, schedule_id: int, fecha_clase: str) -> tuple[bool, str]:
+    """Reserva una clase para un usuario (One-Click Booking)."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            # Verificar capacidad
+            cursor.execute('''
+                SELECT cs.class_id, c.capacidad_maxima,
+                       (SELECT COUNT(*) FROM class_bookings
+                        WHERE schedule_id = cs.id AND fecha_clase = ? AND status = 'confirmed') as bookings_count
+                FROM class_schedules cs
+                JOIN classes c ON cs.class_id = c.id
+                WHERE cs.id = ?
+            ''', (fecha_clase, schedule_id))
+
+            result = cursor.fetchone()
+            if not result:
+                conn.close()
+                return False, "Clase no encontrada"
+
+            capacidad_maxima = result['capacidad_maxima']
+            bookings_count = result['bookings_count']
+
+            if bookings_count >= capacidad_maxima:
+                conn.close()
+                return False, "Clase llena - se agregó a lista de espera"
+
+            # Verificar si ya está reservado
+            cursor.execute('''
+                SELECT id FROM class_bookings
+                WHERE user_id = ? AND schedule_id = ? AND fecha_clase = ?
+            ''', (user_id, schedule_id, fecha_clase))
+
+            if cursor.fetchone():
+                conn.close()
+                return False, "Ya tienes una reserva para esta clase"
+
+            # Crear reserva
+            booking_date = datetime.now().isoformat()
+            cursor.execute('''
+                INSERT INTO class_bookings (user_id, schedule_id, fecha_clase, booking_date, status)
+                VALUES (?, ?, ?, ?, 'confirmed')
+            ''', (user_id, schedule_id, fecha_clase, booking_date))
+
+            conn.commit()
+            conn.close()
+            logger.info(f"Class booked: User {user_id}, Schedule {schedule_id}, Date {fecha_clase}")
+            return True, "Reserva confirmada exitosamente"
+        except sqlite3.IntegrityError:
+            return False, "Error: Ya existe una reserva"
+        except Exception as e:
+            logger.error(f"Error booking class: {e}", exc_info=True)
+            return False, "Error al procesar la reserva"
+
+
+def cancel_booking(booking_id: int) -> tuple[bool, str]:
+    """Cancela una reserva de clase."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            cancellation_date = datetime.now().isoformat()
+            cursor.execute('''
+                UPDATE class_bookings
+                SET status = 'cancelled', cancellation_date = ?
+                WHERE id = ? AND status = 'confirmed'
+            ''', (cancellation_date, booking_id))
+
+            conn.commit()
+            success = cursor.rowcount > 0
+
+            if success:
+                # Obtener información de la reserva para notificar lista de espera
+                cursor.execute('''
+                    SELECT schedule_id, fecha_clase FROM class_bookings WHERE id = ?
+                ''', (booking_id,))
+                booking_info = cursor.fetchone()
+
+                if booking_info:
+                    # Notificar al primero en lista de espera
+                    schedule_id = booking_info['schedule_id']
+                    fecha_clase = booking_info['fecha_clase']
+                    notify_waitlist(conn, cursor, schedule_id, fecha_clase)
+
+            conn.close()
+
+            if success:
+                logger.info(f"Booking cancelled: {booking_id}")
+                return True, "Reserva cancelada exitosamente"
+            else:
+                return False, "No se pudo cancelar la reserva"
+        except Exception as e:
+            logger.error(f"Error cancelling booking: {e}", exc_info=True)
+            return False, "Error al procesar la cancelación"
+
+
+def notify_waitlist(conn, cursor, schedule_id: int, fecha_clase: str):
+    """Notifica al primero en lista de espera cuando se libera un cupo."""
+    try:
+        # Obtener primero en lista de espera
+        cursor.execute('''
+            SELECT id, user_id FROM class_waitlist
+            WHERE schedule_id = ? AND fecha_clase = ? AND status = 'waiting'
+            ORDER BY added_date
+            LIMIT 1
+        ''', (schedule_id, fecha_clase))
+
+        waitlist_entry = cursor.fetchone()
+        if not waitlist_entry:
+            return
+
+        waitlist_id = waitlist_entry['id']
+        user_id = waitlist_entry['user_id']
+
+        # Crear notificación con temporizador de 10 minutos
+        from datetime import timedelta
+        expires_date = (datetime.now() + timedelta(minutes=10)).isoformat()
+
+        cursor.execute('''
+            INSERT INTO notifications (user_id, tipo, titulo, mensaje, data, created_date, expires_date)
+            VALUES (?, 'waitlist_spot_available', 'Cupo Disponible',
+                    'Se liberó un cupo en tu clase. Tienes 10 minutos para confirmar.',
+                    ?, ?, ?)
+        ''', (user_id, json.dumps({'schedule_id': schedule_id, 'fecha_clase': fecha_clase}),
+              datetime.now().isoformat(), expires_date))
+
+        # Actualizar lista de espera
+        cursor.execute('''
+            UPDATE class_waitlist
+            SET status = 'notified', notified_date = ?, confirmation_deadline = ?
+            WHERE id = ?
+        ''', (datetime.now().isoformat(), expires_date, waitlist_id))
+
+        conn.commit()
+        logger.info(f"Waitlist notification sent to user {user_id}")
+    except Exception as e:
+        logger.error(f"Error notifying waitlist: {e}", exc_info=True)
+
+
+def add_to_waitlist(user_id: int, schedule_id: int, fecha_clase: str) -> tuple[bool, str]:
+    """Agrega un usuario a la lista de espera."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            added_date = datetime.now().isoformat()
+            cursor.execute('''
+                INSERT INTO class_waitlist (user_id, schedule_id, fecha_clase, added_date, status)
+                VALUES (?, ?, ?, ?, 'waiting')
+            ''', (user_id, schedule_id, fecha_clase, added_date))
+
+            conn.commit()
+            conn.close()
+            logger.info(f"User {user_id} added to waitlist for schedule {schedule_id}")
+            return True, "Agregado a lista de espera"
+        except Exception as e:
+            logger.error(f"Error adding to waitlist: {e}", exc_info=True)
+            return False, "Error al agregar a lista de espera"
+
+
+def get_user_bookings(user_id: int, fecha_desde: str = None) -> List[Dict[str, Any]]:
+    """Obtiene las reservas de un usuario."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if fecha_desde:
+            cursor.execute('''
+                SELECT cb.*, cs.dia_semana, cs.hora_inicio, cs.sala,
+                       c.nombre as class_nombre, c.instructor, c.duracion
+                FROM class_bookings cb
+                JOIN class_schedules cs ON cb.schedule_id = cs.id
+                JOIN classes c ON cs.class_id = c.id
+                WHERE cb.user_id = ? AND cb.fecha_clase >= ? AND cb.status = 'confirmed'
+                ORDER BY cb.fecha_clase, cs.hora_inicio
+            ''', (user_id, fecha_desde))
+        else:
+            cursor.execute('''
+                SELECT cb.*, cs.dia_semana, cs.hora_inicio, cs.sala,
+                       c.nombre as class_nombre, c.instructor, c.duracion
+                FROM class_bookings cb
+                JOIN class_schedules cs ON cb.schedule_id = cs.id
+                JOIN classes c ON cs.class_id = c.id
+                WHERE cb.user_id = ? AND cb.status = 'confirmed'
+                ORDER BY cb.fecha_clase, cs.hora_inicio
+            ''', (user_id,))
+
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+
+def rate_class(user_id: int, class_id: int, schedule_id: int, fecha_clase: str,
+              rating: int, instructor_rating: int = None, comentario: str = "") -> tuple[bool, str]:
+    """Califica una clase después de asistir."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            rating_date = datetime.now().isoformat()
+            cursor.execute('''
+                INSERT INTO class_ratings (user_id, class_id, schedule_id, fecha_clase,
+                                          rating, instructor_rating, comentario, rating_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, class_id, schedule_id, fecha_clase, rating,
+                  instructor_rating, comentario, rating_date))
+
+            conn.commit()
+            conn.close()
+            logger.info(f"Class rated: User {user_id}, Class {class_id}, Rating {rating}")
+            return True, "Calificación enviada exitosamente"
+        except Exception as e:
+            logger.error(f"Error rating class: {e}", exc_info=True)
+            return False, "Error al enviar calificación"
+
+
+# ============================================================================
+# GESTIÓN DE EQUIPOS Y ZONAS
+# ============================================================================
+
+def create_equipment_zone(nombre: str, tipo: str, descripcion: str = "",
+                         cantidad: int = 1, duracion_slot: int = 60) -> Optional[int]:
+    """Crea un equipo o zona reservable."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            created_date = datetime.now().isoformat()
+
+            cursor.execute('''
+                INSERT INTO equipment_zones (nombre, tipo, descripcion, cantidad,
+                                            duracion_slot, created_date)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (nombre, tipo, descripcion, cantidad, duracion_slot, created_date))
+
+            conn.commit()
+            equipment_id = cursor.lastrowid
+            conn.close()
+            logger.info(f"Equipment/zone created: {nombre} (ID: {equipment_id})")
+            return equipment_id
+        except Exception as e:
+            logger.error(f"Error creating equipment/zone: {e}", exc_info=True)
+            return None
+
+
+def get_all_equipment_zones(active_only: bool = True) -> List[Dict[str, Any]]:
+    """Obtiene todos los equipos y zonas."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if active_only:
+            cursor.execute('SELECT * FROM equipment_zones WHERE is_active = 1 AND reservable = 1 ORDER BY nombre')
+        else:
+            cursor.execute('SELECT * FROM equipment_zones ORDER BY nombre')
+
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+
+def reserve_equipment(user_id: int, equipment_id: int, fecha_reserva: str,
+                     hora_inicio: str, hora_fin: str) -> tuple[bool, str]:
+    """Reserva un equipo o zona."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            # Verificar disponibilidad
+            cursor.execute('''
+                SELECT COUNT(*) as count FROM equipment_reservations
+                WHERE equipment_id = ? AND fecha_reserva = ? AND status = 'confirmed'
+                AND ((hora_inicio < ? AND hora_fin > ?) OR
+                     (hora_inicio < ? AND hora_fin > ?) OR
+                     (hora_inicio >= ? AND hora_fin <= ?))
+            ''', (equipment_id, fecha_reserva, hora_fin, hora_inicio,
+                  hora_fin, hora_inicio, hora_inicio, hora_fin))
+
+            result = cursor.fetchone()
+            if result['count'] > 0:
+                conn.close()
+                return False, "Equipo/zona no disponible en ese horario"
+
+            # Crear reserva
+            booking_date = datetime.now().isoformat()
+            cursor.execute('''
+                INSERT INTO equipment_reservations
+                (user_id, equipment_id, fecha_reserva, hora_inicio, hora_fin, booking_date, status)
+                VALUES (?, ?, ?, ?, ?, ?, 'confirmed')
+            ''', (user_id, equipment_id, fecha_reserva, hora_inicio, hora_fin, booking_date))
+
+            conn.commit()
+            conn.close()
+            logger.info(f"Equipment reserved: User {user_id}, Equipment {equipment_id}")
+            return True, "Reserva confirmada exitosamente"
+        except Exception as e:
+            logger.error(f"Error reserving equipment: {e}", exc_info=True)
+            return False, "Error al reservar equipo"
+
+
+# ============================================================================
+# GESTIÓN DE WORKOUT LOGS
+# ============================================================================
+
+def create_exercise(nombre: str, descripcion: str = "", categoria: str = "",
+                   equipo_necesario: str = "") -> Optional[int]:
+    """Crea un ejercicio."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            created_date = datetime.now().isoformat()
+
+            cursor.execute('''
+                INSERT INTO exercises (nombre, descripcion, categoria, equipo_necesario, created_date)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (nombre, descripcion, categoria, equipo_necesario, created_date))
+
+            conn.commit()
+            exercise_id = cursor.lastrowid
+            conn.close()
+            logger.info(f"Exercise created: {nombre} (ID: {exercise_id})")
+            return exercise_id
+        except Exception as e:
+            logger.error(f"Error creating exercise: {e}", exc_info=True)
+            return None
+
+
+def log_workout(user_id: int, exercise_id: int, fecha: str, serie: int,
+               repeticiones: int, peso: float = None, descanso_segundos: int = None) -> Optional[int]:
+    """Registra una serie de ejercicio (Quick Log)."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            log_date = datetime.now().isoformat()
+
+            cursor.execute('''
+                INSERT INTO workout_logs (user_id, exercise_id, fecha, serie, repeticiones,
+                                         peso, descanso_segundos, log_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, exercise_id, fecha, serie, repeticiones, peso, descanso_segundos, log_date))
+
+            conn.commit()
+            log_id = cursor.lastrowid
+            conn.close()
+            logger.info(f"Workout logged: User {user_id}, Exercise {exercise_id}")
+            return log_id
+        except Exception as e:
+            logger.error(f"Error logging workout: {e}", exc_info=True)
+            return None
+
+
+def get_exercise_history(user_id: int, exercise_id: int, limit: int = 10) -> List[Dict[str, Any]]:
+    """Obtiene el historial de un ejercicio."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT * FROM workout_logs
+            WHERE user_id = ? AND exercise_id = ?
+            ORDER BY fecha DESC, serie DESC
+            LIMIT ?
+        ''', (user_id, exercise_id, limit))
+
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+
+def get_all_exercises() -> List[Dict[str, Any]]:
+    """Obtiene todos los ejercicios."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT * FROM exercises ORDER BY nombre')
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+
+
+# ============================================================================
+# GESTIÓN DE CHECK-IN Y TOKENS
+# ============================================================================
+
+def generate_checkin_token(user_id: int, token_type: str = "qr") -> tuple[bool, str]:
+    """Genera un token de check-in (QR/NFC)."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            # Generar token único
+            import secrets
+            token = secrets.token_urlsafe(32)
+            generated_date = datetime.now().isoformat()
+
+            cursor.execute('''
+                INSERT INTO checkin_tokens (user_id, token, token_type, generated_date)
+                VALUES (?, ?, ?, ?)
+            ''', (user_id, token, token_type, generated_date))
+
+            conn.commit()
+            conn.close()
+            logger.info(f"Check-in token generated for user {user_id}")
+            return True, token
+        except Exception as e:
+            logger.error(f"Error generating check-in token: {e}", exc_info=True)
+            return False, ""
+
+
+def checkin_user(user_id: int, location: str = "entrada") -> tuple[bool, str]:
+    """Registra check-in de usuario."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            checkin_date = datetime.now().isoformat()
+            cursor.execute('''
+                INSERT INTO checkin_history (user_id, checkin_date, location)
+                VALUES (?, ?, ?)
+            ''', (user_id, checkin_date, location))
+
+            conn.commit()
+            conn.close()
+            logger.info(f"User {user_id} checked in at {location}")
+            return True, "Check-in exitoso"
+        except Exception as e:
+            logger.error(f"Error checking in user: {e}", exc_info=True)
+            return False, "Error al registrar check-in"
+
+
+# ============================================================================
+# GESTIÓN DE NOTIFICACIONES
+# ============================================================================
+
+def create_notification(user_id: int, tipo: str, titulo: str, mensaje: str,
+                       data: str = "", action_url: str = "", expires_date: str = None) -> Optional[int]:
+    """Crea una notificación."""
+    with db_lock:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            created_date = datetime.now().isoformat()
+
+            cursor.execute('''
+                INSERT INTO notifications (user_id, tipo, titulo, mensaje, data,
+                                          created_date, action_url, expires_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, tipo, titulo, mensaje, data, created_date, action_url, expires_date))
+
+            conn.commit()
+            notification_id = cursor.lastrowid
+            conn.close()
+            logger.info(f"Notification created for user {user_id}")
+            return notification_id
+        except Exception as e:
+            logger.error(f"Error creating notification: {e}", exc_info=True)
+            return None
+
+
+def get_user_notifications(user_id: int, unread_only: bool = False) -> List[Dict[str, Any]]:
+    """Obtiene notificaciones de un usuario."""
+    with db_lock:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if unread_only:
+            cursor.execute('''
+                SELECT * FROM notifications
+                WHERE user_id = ? AND is_read = 0
+                ORDER BY created_date DESC
+            ''', (user_id,))
+        else:
+            cursor.execute('''
+                SELECT * FROM notifications
+                WHERE user_id = ?
+                ORDER BY created_date DESC
+            ''', (user_id,))
+
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
 
 
 # Inicializar la base de datos al importar el módulo

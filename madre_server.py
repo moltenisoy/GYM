@@ -479,6 +479,336 @@ async def health_check():
     }
 
 
+# ============================================================================
+# ENDPOINTS DE CLASES Y RESERVAS
+# ============================================================================
+
+class ClassBookingRequest(BaseModel):
+    username: str
+    schedule_id: int
+    fecha_clase: str
+
+
+class ClassRatingRequest(BaseModel):
+    username: str
+    class_id: int
+    schedule_id: int
+    fecha_clase: str
+    rating: int = Field(..., ge=1, le=5)
+    instructor_rating: Optional[int] = Field(None, ge=1, le=5)
+    comentario: Optional[str] = ""
+
+
+@app.get("/clases", summary="Obtiene todas las clases disponibles")
+async def get_classes(active_only: bool = True):
+    """Retorna lista de todas las clases."""
+    try:
+        classes = madre_db.get_all_classes(active_only)
+        return {"status": "success", "clases": classes}
+    except Exception as e:
+        logger.error(f"Error getting classes: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al obtener clases")
+
+
+@app.get("/clases/horarios", summary="Obtiene horarios de clases")
+async def get_schedules(class_id: Optional[int] = None):
+    """Retorna horarios de clases disponibles."""
+    try:
+        schedules = madre_db.get_class_schedules(class_id)
+        return {"status": "success", "horarios": schedules}
+    except Exception as e:
+        logger.error(f"Error getting schedules: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al obtener horarios")
+
+
+@app.post("/clases/reservar", summary="Reserva una clase (One-Click)")
+async def book_class(booking: ClassBookingRequest):
+    """One-Click Booking: Reserva una clase con un solo toque."""
+    try:
+        # Obtener user_id
+        user = madre_db.get_user(booking.username)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        success, message = madre_db.book_class(
+            user['id'], booking.schedule_id, booking.fecha_clase
+        )
+        
+        if not success and "llena" in message:
+            # Agregar a lista de espera automáticamente
+            success_wl, msg_wl = madre_db.add_to_waitlist(
+                user['id'], booking.schedule_id, booking.fecha_clase
+            )
+            return {
+                "status": "waitlist",
+                "message": "Clase llena. Agregado a lista de espera.",
+                "waitlist_added": success_wl
+            }
+        
+        if success:
+            logger.info(f"Class booked: {booking.username} - Schedule {booking.schedule_id}")
+            return {"status": "success", "message": message}
+        else:
+            return {"status": "error", "message": message}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error booking class: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al reservar clase")
+
+
+@app.get("/clases/mis-reservas", summary="Obtiene reservas del usuario")
+async def get_my_bookings(username: str):
+    """Retorna las reservas de clases del usuario."""
+    try:
+        user = madre_db.get_user(username)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        bookings = madre_db.get_user_bookings(user['id'], datetime.now().date().isoformat())
+        return {"status": "success", "reservas": bookings}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting bookings: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al obtener reservas")
+
+
+@app.post("/clases/cancelar", summary="Cancela una reserva")
+async def cancel_booking(booking_id: int):
+    """Cancela una reserva de clase."""
+    try:
+        success, message = madre_db.cancel_booking(booking_id)
+        if success:
+            return {"status": "success", "message": message}
+        else:
+            return {"status": "error", "message": message}
+    except Exception as e:
+        logger.error(f"Error cancelling booking: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al cancelar reserva")
+
+
+@app.post("/clases/calificar", summary="Califica una clase")
+async def rate_class(rating: ClassRatingRequest):
+    """Califica una clase después de asistir (Quick Rating)."""
+    try:
+        user = madre_db.get_user(rating.username)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        success, message = madre_db.rate_class(
+            user['id'], rating.class_id, rating.schedule_id,
+            rating.fecha_clase, rating.rating, rating.instructor_rating,
+            rating.comentario
+        )
+        
+        if success:
+            return {"status": "success", "message": message}
+        else:
+            return {"status": "error", "message": message}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error rating class: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al calificar clase")
+
+
+# ============================================================================
+# ENDPOINTS DE EQUIPOS Y ZONAS
+# ============================================================================
+
+class EquipmentReservationRequest(BaseModel):
+    username: str
+    equipment_id: int
+    fecha_reserva: str
+    hora_inicio: str
+    hora_fin: str
+
+
+@app.get("/equipos", summary="Obtiene equipos y zonas disponibles")
+async def get_equipment():
+    """Retorna lista de equipos y zonas reservables."""
+    try:
+        equipment = madre_db.get_all_equipment_zones()
+        return {"status": "success", "equipos": equipment}
+    except Exception as e:
+        logger.error(f"Error getting equipment: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al obtener equipos")
+
+
+@app.post("/equipos/reservar", summary="Reserva equipo o zona")
+async def reserve_equipment(reservation: EquipmentReservationRequest):
+    """Reserva un equipo o zona por franjas horarias."""
+    try:
+        user = madre_db.get_user(reservation.username)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        success, message = madre_db.reserve_equipment(
+            user['id'], reservation.equipment_id, reservation.fecha_reserva,
+            reservation.hora_inicio, reservation.hora_fin
+        )
+        
+        if success:
+            return {"status": "success", "message": message}
+        else:
+            return {"status": "error", "message": message}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error reserving equipment: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al reservar equipo")
+
+
+# ============================================================================
+# ENDPOINTS DE WORKOUT LOGGING
+# ============================================================================
+
+class WorkoutLogRequest(BaseModel):
+    username: str
+    exercise_id: int
+    fecha: str
+    serie: int
+    repeticiones: int
+    peso: Optional[float] = None
+    descanso_segundos: Optional[int] = None
+
+
+@app.get("/ejercicios", summary="Obtiene lista de ejercicios")
+async def get_exercises():
+    """Retorna todos los ejercicios disponibles."""
+    try:
+        exercises = madre_db.get_all_exercises()
+        return {"status": "success", "ejercicios": exercises}
+    except Exception as e:
+        logger.error(f"Error getting exercises: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al obtener ejercicios")
+
+
+@app.post("/workout/log", summary="Registra serie de ejercicio (Quick Log)")
+async def log_workout(log: WorkoutLogRequest):
+    """Quick Log: Registra una serie de ejercicio rápidamente."""
+    try:
+        user = madre_db.get_user(log.username)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        log_id = madre_db.log_workout(
+            user['id'], log.exercise_id, log.fecha, log.serie,
+            log.repeticiones, log.peso, log.descanso_segundos
+        )
+        
+        if log_id:
+            return {"status": "success", "log_id": log_id, "message": "Serie registrada"}
+        else:
+            return {"status": "error", "message": "Error al registrar serie"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error logging workout: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al registrar entrenamiento")
+
+
+@app.get("/workout/historial", summary="Obtiene historial de ejercicio")
+async def get_exercise_history(username: str, exercise_id: int, limit: int = 10):
+    """Retorna el historial de un ejercicio para el usuario."""
+    try:
+        user = madre_db.get_user(username)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        history = madre_db.get_exercise_history(user['id'], exercise_id, limit)
+        return {"status": "success", "historial": history}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting exercise history: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al obtener historial")
+
+
+# ============================================================================
+# ENDPOINTS DE CHECK-IN Y TOKENS
+# ============================================================================
+
+@app.post("/checkin/generate-token", summary="Genera token de check-in QR/NFC")
+async def generate_checkin_token(username: str, token_type: str = "qr"):
+    """Genera un token único de check-in para acceso digital."""
+    try:
+        user = madre_db.get_user(username)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        success, token = madre_db.generate_checkin_token(user['id'], token_type)
+        
+        if success:
+            return {"status": "success", "token": token, "token_type": token_type}
+        else:
+            return {"status": "error", "message": "Error al generar token"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating token: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al generar token")
+
+
+@app.post("/checkin", summary="Registra check-in de usuario")
+async def checkin(username: str, location: str = "entrada"):
+    """Registra check-in digital del usuario en el gimnasio."""
+    try:
+        user = madre_db.get_user(username)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        success, message = madre_db.checkin_user(user['id'], location)
+        
+        if success:
+            return {"status": "success", "message": message}
+        else:
+            return {"status": "error", "message": message}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error checking in: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al registrar check-in")
+
+
+# ============================================================================
+# ENDPOINTS DE NOTIFICACIONES
+# ============================================================================
+
+@app.get("/notificaciones", summary="Obtiene notificaciones del usuario")
+async def get_notifications(username: str, unread_only: bool = False):
+    """Retorna notificaciones del usuario."""
+    try:
+        user = madre_db.get_user(username)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        notifications = madre_db.get_user_notifications(user['id'], unread_only)
+        return {"status": "success", "notificaciones": notifications}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting notifications: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al obtener notificaciones")
+
+
+# ============================================================================
+# UTILIDADES
+# ============================================================================
+
+@app.post("/utilidades/calculadora-discos", summary="Calcula discos para barra")
+async def calculate_plates(target_weight: float, bar_weight: float = 20.0):
+    """Calculadora de discos: indica qué discos poner en la barra."""
+    try:
+        from shared.workout_utils import calculate_plates as calc_plates
+        result = calc_plates(target_weight, bar_weight)
+        return {"status": "success", "resultado": result}
+    except Exception as e:
+        logger.error(f"Error calculating plates: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error al calcular discos")
+
+
 @app.get("/", summary="Endpoint raíz de estado")
 async def root():
     """
