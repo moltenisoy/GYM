@@ -74,7 +74,7 @@ class APICommunicator:
         """
         Verifica la conectividad con el servidor madre.
         Intenta alcanzar el endpoint de health para validar conexión.
-        
+
         Returns:
             bool: True si hay conectividad, False en caso contrario
         """
@@ -190,7 +190,7 @@ class APICommunicator:
     def get_connection_status(self) -> Dict[str, Any]:
         """
         Obtiene el estado actual de la conexión con el servidor.
-        
+
         Returns:
             Dict con información del estado de conexión
         """
@@ -204,7 +204,7 @@ class APICommunicator:
     def force_reconnect(self) -> bool:
         """
         Fuerza un intento de reconexión con el servidor.
-        
+
         Returns:
             bool: True si la reconexión fue exitosa
         """
