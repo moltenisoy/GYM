@@ -1,6 +1,6 @@
 """
-Configuration settings loader for the GYM system.
-Loads settings from environment variables with fallback to defaults.
+Cargador de configuración de ajustes para el sistema GYM.
+Carga configuraciones desde variables de entorno con valores por defecto como respaldo.
 """
 
 import os
@@ -23,17 +23,17 @@ from shared.constants import (
 
 def get_env(key: str, default: Any = None, cast_type: type = str) -> Any:
     """
-    Get environment variable with type casting and default value.
+    Obtiene variable de entorno con conversión de tipo y valor por defecto.
 
     Args:
-        key: Environment variable name
-        default: Default value if not found
-        cast_type: Type to cast the value to (int, bool, str, etc.)
+        key: Nombre de la variable de entorno
+        default: Valor por defecto si no se encuentra
+        cast_type: Tipo al que convertir el valor (int, bool, str, etc.)
 
     Returns:
-        Environment variable value cast to the specified type, or default
+        Valor de la variable de entorno convertido al tipo especificado, o el valor por defecto
 
-    Example:
+    Ejemplo:
         >>> port = get_env('MADRE_PORT', 8000, int)
         >>> debug = get_env('DEBUG', False, bool)
     """
@@ -52,7 +52,7 @@ def get_env(key: str, default: Any = None, cast_type: type = str) -> Any:
 
 
 class MadreSettings:
-    """Configuration settings for Madre (server) application."""
+    """Configuración de ajustes para la aplicación Madre (servidor)."""
 
     def __init__(self):
         self.HOST: str = get_env('MADRE_HOST', DEFAULT_HOST_IP)
@@ -65,7 +65,7 @@ class MadreSettings:
 
 
 class HijaSettings:
-    """Configuration settings for Hija (client) application."""
+    """Configuración de ajustes para la aplicación Hija (cliente)."""
 
     def __init__(self):
         self.MADRE_BASE_URL: str = get_env('MADRE_BASE_URL', DEFAULT_MADRE_BASE_URL)
@@ -82,19 +82,19 @@ class HijaSettings:
         return f"HijaSettings(MADRE_BASE_URL={self.MADRE_BASE_URL}, LOG_LEVEL={self.LOG_LEVEL})"
 
 
-# Singleton instances
+# Instancias singleton
 _madre_settings: Optional[MadreSettings] = None
 _hija_settings: Optional[HijaSettings] = None
 
 
 def get_madre_settings() -> MadreSettings:
     """
-    Get Madre settings singleton instance.
+    Obtiene la instancia singleton de configuración Madre.
 
     Returns:
-        MadreSettings instance
+        Instancia de MadreSettings
 
-    Example:
+    Ejemplo:
         >>> settings = get_madre_settings()
         >>> print(settings.HOST, settings.PORT)
     """
@@ -106,12 +106,12 @@ def get_madre_settings() -> MadreSettings:
 
 def get_hija_settings() -> HijaSettings:
     """
-    Get Hija settings singleton instance.
+    Obtiene la instancia singleton de configuración Hija.
 
     Returns:
-        HijaSettings instance
+        Instancia de HijaSettings
 
-    Example:
+    Ejemplo:
         >>> settings = get_hija_settings()
         >>> print(settings.MADRE_BASE_URL)
     """
@@ -123,15 +123,15 @@ def get_hija_settings() -> HijaSettings:
 
 def load_env_file(env_path: str = '.env') -> bool:
     """
-    Load environment variables from a .env file.
+    Carga variables de entorno desde un archivo .env.
 
     Args:
-        env_path: Path to .env file (default: .env in current directory)
+        env_path: Ruta al archivo .env (por defecto: .env en directorio actual)
 
     Returns:
-        True if file was loaded successfully, False otherwise
+        True si el archivo se cargó exitosamente, False en caso contrario
 
-    Example:
+    Ejemplo:
         >>> load_env_file('config/.env')
     """
     if not os.path.exists(env_path):
@@ -141,31 +141,31 @@ def load_env_file(env_path: str = '.env') -> bool:
         with open(env_path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
-                # Skip comments and empty lines
+                # Saltar comentarios y líneas vacías
                 if not line or line.startswith('#'):
                     continue
 
-                # Parse KEY=VALUE
+                # Parsear KEY=VALUE
                 if '=' in line:
                     key, value = line.split('=', 1)
                     key = key.strip()
                     value = value.strip()
-                    # Remove quotes if present
+                    # Remover comillas si están presentes
                     if value.startswith('"') and value.endswith('"'):
                         value = value[1:-1]
                     elif value.startswith("'") and value.endswith("'"):
                         value = value[1:-1]
 
-                    # Only set if not already in environment
+                    # Solo configurar si no está ya en el entorno
                     if key not in os.environ:
                         os.environ[key] = value
 
         return True
     except Exception as e:
-        print(f"Error loading .env file: {e}")
+        print(f"Error cargando archivo .env: {e}")
         return False
 
 
-# Attempt to load .env file on module import
+# Intentar cargar archivo .env al importar el módulo
 load_env_file('.env')
 load_env_file('config/.env')

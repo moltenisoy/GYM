@@ -16,10 +16,10 @@ import json
 from config.settings import get_madre_settings
 from shared.logger import setup_logger
 
-# Initialize logger
+# Inicializar logger
 logger = setup_logger(__name__, log_file="madre_db.log")
 
-# Load configuration
+# Cargar configuración
 settings = get_madre_settings()
 
 # Ruta de la base de datos (from configuration)
@@ -1011,7 +1011,7 @@ def update_madre_server_sync(server_name: str) -> bool:
 # ============================================================================
 
 def create_class(nombre: str, descripcion: str, instructor: str, duracion: int,
-                capacidad_maxima: int, intensidad: str = "media", tipo: str = "grupal") -> Optional[int]:
+                 capacidad_maxima: int, intensidad: str = "media", tipo: str = "grupal") -> Optional[int]:
     """Crea una nueva clase."""
     with db_lock:
         try:
@@ -1068,8 +1068,8 @@ def get_class(class_id: int) -> Optional[Dict[str, Any]]:
 
 
 def create_class_schedule(class_id: int, instructor: str, dia_semana: str,
-                         hora_inicio: str, fecha_inicio: str, fecha_fin: str = None,
-                         recurrente: bool = True, sala: str = "") -> Optional[int]:
+                          hora_inicio: str, fecha_inicio: str, fecha_fin: str = None,
+                          recurrente: bool = True, sala: str = "") -> Optional[int]:
     """Crea un horario para una clase."""
     with db_lock:
         try:
@@ -1319,7 +1319,7 @@ def get_user_bookings(user_id: int, fecha_desde: str = None) -> List[Dict[str, A
 
 
 def rate_class(user_id: int, class_id: int, schedule_id: int, fecha_clase: str,
-              rating: int, instructor_rating: int = None, comentario: str = "") -> tuple[bool, str]:
+               rating: int, instructor_rating: int = None, comentario: str = "") -> tuple[bool, str]:
     """Califica una clase después de asistir."""
     with db_lock:
         try:
@@ -1348,7 +1348,7 @@ def rate_class(user_id: int, class_id: int, schedule_id: int, fecha_clase: str,
 # ============================================================================
 
 def create_equipment_zone(nombre: str, tipo: str, descripcion: str = "",
-                         cantidad: int = 1, duracion_slot: int = 60) -> Optional[int]:
+                          cantidad: int = 1, duracion_slot: int = 60) -> Optional[int]:
     """Crea un equipo o zona reservable."""
     with db_lock:
         try:
@@ -1389,7 +1389,7 @@ def get_all_equipment_zones(active_only: bool = True) -> List[Dict[str, Any]]:
 
 
 def reserve_equipment(user_id: int, equipment_id: int, fecha_reserva: str,
-                     hora_inicio: str, hora_fin: str) -> tuple[bool, str]:
+                      hora_inicio: str, hora_fin: str) -> tuple[bool, str]:
     """Reserva un equipo o zona."""
     with db_lock:
         try:
@@ -1433,7 +1433,7 @@ def reserve_equipment(user_id: int, equipment_id: int, fecha_reserva: str,
 # ============================================================================
 
 def create_exercise(nombre: str, descripcion: str = "", categoria: str = "",
-                   equipo_necesario: str = "") -> Optional[int]:
+                    equipo_necesario: str = "") -> Optional[int]:
     """Crea un ejercicio."""
     with db_lock:
         try:
@@ -1457,7 +1457,7 @@ def create_exercise(nombre: str, descripcion: str = "", categoria: str = "",
 
 
 def log_workout(user_id: int, exercise_id: int, fecha: str, serie: int,
-               repeticiones: int, peso: float = None, descanso_segundos: int = None) -> Optional[int]:
+                repeticiones: int, peso: float = None, descanso_segundos: int = None) -> Optional[int]:
     """Registra una serie de ejercicio (Quick Log)."""
     with db_lock:
         try:
@@ -1568,7 +1568,7 @@ def checkin_user(user_id: int, location: str = "entrada") -> tuple[bool, str]:
 # ============================================================================
 
 def create_notification(user_id: int, tipo: str, titulo: str, mensaje: str,
-                       data: str = "", action_url: str = "", expires_date: str = None) -> Optional[int]:
+                        data: str = "", action_url: str = "", expires_date: str = None) -> Optional[int]:
     """Crea una notificación."""
     with db_lock:
         try:

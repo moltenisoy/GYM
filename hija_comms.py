@@ -25,10 +25,10 @@ from shared.constants import (
     CREDENTIALS_FILENAME
 )
 
-# Initialize logger
+# Inicializar logger
 logger = setup_logger(__name__, log_file="hija_comms.log")
 
-# Load configuration
+# Cargar configuración
 settings = get_hija_settings()
 
 # Directorio para datos locales
@@ -38,18 +38,19 @@ else:
     LOCAL_DATA_DIR = os.path.join(os.path.dirname(__file__), settings.LOCAL_DATA_DIR)
 CREDENTIALS_FILE = os.path.join(LOCAL_DATA_DIR, CREDENTIALS_FILENAME)
 
-logger.info(f"Communication module initialized - Madre URL: {settings.MADRE_BASE_URL}")
+logger.info("Communication module initialized - Madre URL: %s", settings.MADRE_BASE_URL)
 
 
 class APICommunicator:
     """
     Gestiona todas las peticiones HTTP a la API del Sistema de Gestión del Gimnasio.
-    Incluye retry logic con exponential backoff y timeouts configurables.
+    Incluye retry logic con exponential backoff, timeouts configurables,
+    detección de conexión, y manejo robusto de errores de red.
     """
 
     def __init__(self, base_url: Optional[str] = None):
         """
-        Inicializa el comunicador API.
+        Inicializa el comunicador API con características mejoradas de resiliencia.
 
         Args:
             base_url: URL base del servidor Madre (default: from settings)
@@ -57,8 +58,41 @@ class APICommunicator:
         self.base_url = base_url or settings.MADRE_BASE_URL
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
+
+        # Control de estado de conexión
+        self.is_connected = False
+        self.last_successful_request = None
+        self.consecutive_failures = 0
+
         os.makedirs(LOCAL_DATA_DIR, exist_ok=True)
-        logger.info(f"APICommunicator initialized with base_url: {self.base_url}")
+        logger.info("APICommunicator initialized with base_url: %s", self.base_url)
+
+        # Realizar ping inicial para validar conexión
+        self._check_connectivity()
+
+    def _check_connectivity(self) -> bool:
+        """
+        Verifica la conectividad con el servidor madre.
+        Intenta alcanzar el endpoint de health para validar conexión.
+
+        Returns:
+            bool: True si hay conectividad, False en caso contrario
+        """
+        try:
+            response = self.session.get(
+                f"{self.base_url}/health",
+                timeout=settings.HTTP_TIMEOUT_SHORT
+            )
+            if response.status_code == 200:
+                self.is_connected = True
+                self.consecutive_failures = 0
+                logger.info("Conectividad con servidor madre: OK")
+                return True
+        except Exception as e:
+            self.is_connected = False
+            logger.warning("No se pudo establecer conexión con servidor madre: %s", e)
+
+        return False
 
     def _retry_request(
         self,
@@ -91,7 +125,7 @@ class APICommunicator:
 
         for attempt in range(max_retries):
             try:
-                logger.debug(f"Request attempt {attempt + 1}/{max_retries}: {method} {url}")
+                logger.debug("Request attempt %d/%d: %s %s", attempt + 1, max_retries, method, url)
 
                 if method.upper() == 'GET':
                     response = self.session.get(url, timeout=timeout, **kwargs)
@@ -103,30 +137,80 @@ class APICommunicator:
                     raise ValueError(f"Unsupported HTTP method: {method}")
 
                 response.raise_for_status()
-                logger.debug(f"Request successful: {method} {url}")
+                logger.debug("Request successful: %s %s", method, url)
+
+                # Actualizar estado de conexión exitosa
+                self.is_connected = True
+                self.last_successful_request = datetime.now()
+                self.consecutive_failures = 0
+
                 return response
 
             except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
                 last_exception = e
+                self.consecutive_failures += 1
+                self.is_connected = False
+
                 if attempt < max_retries - 1:
                     # Exponential backoff with jitter (random 0-1 second)
                     wait_time = (2 ** attempt) + random.uniform(0, 1)
                     logger.warning(
-                        f"Request failed (attempt {attempt + 1}/{max_retries}): {e}. "
-                        f"Retrying in {wait_time:.2f}s..."
+                        "Request failed (attempt %d/%d): %s. Retrying in %.2fs...",
+                        attempt + 1, max_retries, e, wait_time
                     )
                     time.sleep(wait_time)
+
+                    # Intentar reconectar después de múltiples fallos
+                    if self.consecutive_failures >= 2:
+                        logger.info("Intentando reestablecer conexión...")
+                        self._check_connectivity()
                 else:
-                    logger.error(f"Request failed after {max_retries} attempts: {e}")
+                    logger.error("Request failed after %d attempts: %s", max_retries, e)
                     raise
 
             except requests.exceptions.HTTPError as e:
-                # Don't retry on HTTP errors (4xx, 5xx)
-                logger.error(f"HTTP error: {e}")
+                # Registrar error HTTP pero intentar mantener sesión
+                logger.error("HTTP error: %s", e)
+
+                # Para errores 5xx del servidor, podemos reintentar
+                if e.response.status_code >= 500 and attempt < max_retries - 1:
+                    wait_time = (2 ** attempt) + random.uniform(0, 1)
+                    logger.warning(
+                        "Server error %d, retrying in %.2fs...",
+                        e.response.status_code, wait_time
+                    )
+                    time.sleep(wait_time)
+                    continue
+
                 raise
 
         # Should not reach here, but just in case
         raise last_exception
+
+    def get_connection_status(self) -> Dict[str, Any]:
+        """
+        Obtiene el estado actual de la conexión con el servidor.
+
+        Returns:
+            Dict con información del estado de conexión
+        """
+        return {
+            'connected': self.is_connected,
+            'last_successful_request': self.last_successful_request.isoformat() if self.last_successful_request else None,
+            'consecutive_failures': self.consecutive_failures,
+            'server_url': self.base_url
+        }
+
+    def force_reconnect(self) -> bool:
+        """
+        Fuerza un intento de reconexión con el servidor.
+
+        Returns:
+            bool: True si la reconexión fue exitosa
+        """
+        logger.info("Forzando reconexión con servidor madre...")
+        self.consecutive_failures = 0
+        return self._check_connectivity()
 
     def save_credentials(self, username: str, password: str) -> bool:
         """Guarda las credenciales localmente (cifradas básicamente)."""
@@ -142,7 +226,7 @@ class APICommunicator:
                 json.dump(data, f)
             return True
         except Exception as e:
-            print(f"Error guardando credenciales: {e}")
+            logger.error("Error guardando credenciales: %s", e)
             return False
 
     def load_credentials(self) -> Optional[Dict[str, str]]:
@@ -194,7 +278,7 @@ class APICommunicator:
         url = f"{self.base_url}{ENDPOINT_AUTORIZAR}"
         payload = {"username": username, "password": password}
 
-        logger.info(f"Attempting login for user: {username}")
+        logger.info("Attempting login for user: %s", username)
 
         try:
             response = self._retry_request(
@@ -209,31 +293,31 @@ class APICommunicator:
             if data.get("status") == STATUS_APPROVED:
                 # Guardar credenciales localmente
                 self.save_credentials(username, password)
-                logger.info(f"Login successful for user: {username}")
+                logger.info("Login successful for user: %s", username)
                 return True, data
             else:
-                logger.warning(f"Unexpected API response for user: {username}")
+                logger.warning("Unexpected API response for user: %s", username)
                 return False, "Respuesta de API desconocida."
 
         except requests.exceptions.HTTPError as e:
             try:
                 error_detail = e.response.json().get("detail", "Error de servidor")
-                logger.error(f"Login HTTP error for {username}: {error_detail}")
+                logger.error("Login HTTP error for %s: %s", username, error_detail)
                 return False, f"Error: {error_detail}"
             except json.JSONDecodeError:
-                logger.error(f"Login HTTP error for {username}: {e.response.status_code}")
+                logger.error("Login HTTP error for %s: %d", username, e.response.status_code)
                 return False, f"Error HTTP {e.response.status_code}"
 
         except requests.exceptions.ConnectionError as e:
-            logger.error(f"Connection error during login for {username}: {e}")
+            logger.error("Connection error during login for %s: %s", username, e)
             return False, ERROR_CONNECTION
 
         except requests.exceptions.Timeout as e:
-            logger.error(f"Timeout during login for {username}: {e}")
+            logger.error("Timeout during login for %s: %s", username, e)
             return False, ERROR_TIMEOUT
 
         except Exception as e:
-            logger.error(f"Unexpected error during login for {username}: {e}", exc_info=True)
+            logger.error("Unexpected error during login for %s: %s", username, e, exc_info=True)
             return False, f"Un error inesperado ha ocurrido: {e}"
 
     def validate_sync_status(self, username: str) -> Tuple[bool, Dict[str, Any]]:
@@ -288,7 +372,7 @@ class APICommunicator:
         url = f"{self.base_url}{ENDPOINT_SINCRONIZAR_DATOS}"
         params = {"usuario": username}
 
-        logger.info(f"Fetching sync data for user: {username}")
+        logger.info("Fetching sync data for user: %s", username)
 
         try:
             response = self._retry_request(
@@ -301,31 +385,31 @@ class APICommunicator:
 
             data = response.json()
             if data.get("status") == STATUS_SYNC_SUCCESS:
-                logger.info(f"Sync data fetched successfully for user: {username}")
+                logger.info("Sync data fetched successfully for user: %s", username)
                 return True, data
             else:
-                logger.warning(f"Invalid sync response for user: {username}")
+                logger.warning("Invalid sync response for user: %s", username)
                 return False, {"error": "Respuesta de sincronización inválida."}
 
         except requests.exceptions.HTTPError as e:
             try:
                 error_detail = e.response.json().get("detail", "Error de servidor")
-                logger.error(f"Sync HTTP error for {username}: {error_detail}")
+                logger.error("Sync HTTP error for %s: %s", username, error_detail)
                 return False, {"error": f"Error: {error_detail}"}
             except json.JSONDecodeError:
-                logger.error(f"Sync HTTP error for {username}: {e.response.status_code}")
+                logger.error("Sync HTTP error for %s: %d", username, e.response.status_code)
                 return False, {"error": f"Error HTTP {e.response.status_code}"}
 
         except requests.exceptions.ConnectionError as e:
-            logger.error(f"Connection error during sync for {username}: {e}")
+            logger.error("Connection error during sync for %s: %s", username, e)
             return False, {"error": ERROR_CONNECTION}
 
         except requests.exceptions.Timeout as e:
-            logger.error(f"Timeout during sync for {username}: {e}")
+            logger.error("Timeout during sync for %s: %s", username, e)
             return False, {"error": ERROR_TIMEOUT}
 
         except Exception as e:
-            logger.error(f"Unexpected error during sync for {username}: {e}", exc_info=True)
+            logger.error("Unexpected error during sync for %s: %s", username, e, exc_info=True)
             return False, {"error": f"Error inesperado: {e}"}
 
     # ============================================================================

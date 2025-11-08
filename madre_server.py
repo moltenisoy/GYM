@@ -14,7 +14,7 @@ import madre_db
 from shared.logger import setup_logger
 from shared.constants import APP_VERSION, APP_FEATURES, SYNC_REQUIRED_HOURS
 
-# Initialize logger
+# Inicializar logger
 logger = setup_logger(__name__, log_file="madre_server.log")
 
 # Crear la instancia de la aplicación FastAPI
@@ -26,7 +26,7 @@ logger.info(f"FastAPI application initialized - Version {APP_VERSION}")
 try:
     from madre_server_extended_api import get_extended_api_router
     from madre_server_extended_api2 import get_extended_api_router2
-    
+
     app.include_router(get_extended_api_router())
     app.include_router(get_extended_api_router2())
     logger.info("Extended API routers included successfully (Features 1-16)")
@@ -529,11 +529,11 @@ async def book_class(booking: ClassBookingRequest):
         user = madre_db.get_user(booking.username)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
         success, message = madre_db.book_class(
             user['id'], booking.schedule_id, booking.fecha_clase
         )
-        
+
         if not success and "llena" in message:
             # Agregar a lista de espera automáticamente
             success_wl, msg_wl = madre_db.add_to_waitlist(
@@ -544,7 +544,7 @@ async def book_class(booking: ClassBookingRequest):
                 "message": "Clase llena. Agregado a lista de espera.",
                 "waitlist_added": success_wl
             }
-        
+
         if success:
             logger.info(f"Class booked: {booking.username} - Schedule {booking.schedule_id}")
             return {"status": "success", "message": message}
@@ -564,7 +564,7 @@ async def get_my_bookings(username: str):
         user = madre_db.get_user(username)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
         bookings = madre_db.get_user_bookings(user['id'], datetime.now().date().isoformat())
         return {"status": "success", "reservas": bookings}
     except HTTPException:
@@ -595,13 +595,13 @@ async def rate_class(rating: ClassRatingRequest):
         user = madre_db.get_user(rating.username)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
         success, message = madre_db.rate_class(
             user['id'], rating.class_id, rating.schedule_id,
             rating.fecha_clase, rating.rating, rating.instructor_rating,
             rating.comentario
         )
-        
+
         if success:
             return {"status": "success", "message": message}
         else:
@@ -643,12 +643,12 @@ async def reserve_equipment(reservation: EquipmentReservationRequest):
         user = madre_db.get_user(reservation.username)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
         success, message = madre_db.reserve_equipment(
             user['id'], reservation.equipment_id, reservation.fecha_reserva,
             reservation.hora_inicio, reservation.hora_fin
         )
-        
+
         if success:
             return {"status": "success", "message": message}
         else:
@@ -692,12 +692,12 @@ async def log_workout(log: WorkoutLogRequest):
         user = madre_db.get_user(log.username)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
         log_id = madre_db.log_workout(
             user['id'], log.exercise_id, log.fecha, log.serie,
             log.repeticiones, log.peso, log.descanso_segundos
         )
-        
+
         if log_id:
             return {"status": "success", "log_id": log_id, "message": "Serie registrada"}
         else:
@@ -716,7 +716,7 @@ async def get_exercise_history(username: str, exercise_id: int, limit: int = 10)
         user = madre_db.get_user(username)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
         history = madre_db.get_exercise_history(user['id'], exercise_id, limit)
         return {"status": "success", "historial": history}
     except HTTPException:
@@ -737,9 +737,9 @@ async def generate_checkin_token(username: str, token_type: str = "qr"):
         user = madre_db.get_user(username)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
         success, token = madre_db.generate_checkin_token(user['id'], token_type)
-        
+
         if success:
             return {"status": "success", "token": token, "token_type": token_type}
         else:
@@ -758,9 +758,9 @@ async def checkin(username: str, location: str = "entrada"):
         user = madre_db.get_user(username)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
         success, message = madre_db.checkin_user(user['id'], location)
-        
+
         if success:
             return {"status": "success", "message": message}
         else:
@@ -783,7 +783,7 @@ async def get_notifications(username: str, unread_only: bool = False):
         user = madre_db.get_user(username)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
-        
+
         notifications = madre_db.get_user_notifications(user['id'], unread_only)
         return {"status": "success", "notificaciones": notifications}
     except HTTPException:

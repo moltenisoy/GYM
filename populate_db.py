@@ -306,14 +306,14 @@ def main():
 def populate_classes_and_schedules():
     """Crea clases grupales y sus horarios."""
     print("\nCreando clases grupales y horarios...")
-    
+
     from datetime import datetime, timedelta
-    
+
     # Fecha de inicio (lunes de esta semana)
     today = datetime.now()
     days_until_monday = (today.weekday()) % 7
     monday = (today - timedelta(days=days_until_monday)).date().isoformat()
-    
+
     classes_data = [
         {
             "nombre": "Spinning",
@@ -398,7 +398,7 @@ def populate_classes_and_schedules():
             ]
         },
     ]
-    
+
     for class_info in classes_data:
         class_id = madre_db.create_class(
             nombre=class_info["nombre"],
@@ -409,10 +409,10 @@ def populate_classes_and_schedules():
             intensidad=class_info["intensidad"],
             tipo=class_info["tipo"]
         )
-        
+
         if class_id:
             print(f"✓ Clase '{class_info['nombre']}' creada (ID: {class_id})")
-            
+
             # Crear horarios
             for horario in class_info["horarios"]:
                 schedule_id = madre_db.create_class_schedule(
@@ -431,7 +431,7 @@ def populate_classes_and_schedules():
 def populate_exercises():
     """Crea ejercicios comunes de gimnasio."""
     print("\nCreando ejercicios...")
-    
+
     exercises = [
         {"nombre": "Press de Banca", "categoria": "pecho", "equipo": "barra", "descripcion": "Ejercicio básico de empuje para pecho"},
         {"nombre": "Sentadillas", "categoria": "piernas", "equipo": "barra", "descripcion": "Ejercicio compuesto de piernas"},
@@ -454,7 +454,7 @@ def populate_exercises():
         {"nombre": "Peso Muerto Rumano", "categoria": "piernas", "equipo": "barra", "descripcion": "Variante de peso muerto para isquiotibiales"},
         {"nombre": "Pullover", "categoria": "pecho", "equipo": "mancuerna", "descripcion": "Ejercicio para pecho y dorsales"},
     ]
-    
+
     for exercise in exercises:
         exercise_id = madre_db.create_exercise(
             nombre=exercise["nombre"],
@@ -469,7 +469,7 @@ def populate_exercises():
 def populate_equipment_zones():
     """Crea equipos y zonas reservables."""
     print("\nCreando equipos y zonas reservables...")
-    
+
     equipment_zones = [
         {"nombre": "Rack de Sentadillas 1", "tipo": "rack", "descripcion": "Rack de sentadillas con barra olímpica", "cantidad": 1, "duracion_slot": 60},
         {"nombre": "Rack de Sentadillas 2", "tipo": "rack", "descripcion": "Rack de sentadillas con barra olímpica", "cantidad": 1, "duracion_slot": 60},
@@ -484,7 +484,7 @@ def populate_equipment_zones():
         {"nombre": "Cancha de Squash", "tipo": "cancha", "descripcion": "Cancha de squash techada", "cantidad": 1, "duracion_slot": 60},
         {"nombre": "Sala de Spinning", "tipo": "sala", "descripcion": "Sala dedicada con 20 bicicletas", "cantidad": 1, "duracion_slot": 60},
     ]
-    
+
     for equipment in equipment_zones:
         equipment_id = madre_db.create_equipment_zone(
             nombre=equipment["nombre"],
