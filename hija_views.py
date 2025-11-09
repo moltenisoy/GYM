@@ -488,14 +488,6 @@ class MainAppFrame(customtkinter.CTkFrame):
             )
             lbl_msg.pack(padx=10, pady=5)
 
-        # --- Pie de Página de Estado ---
-        self.lbl_status = customtkinter.CTkLabel(
-            self,
-            text="Aplicación iniciada. Sincronización automática activa.",
-            height=20
-        )
-        self.lbl_status.grid(row=2, column=0, padx=20, pady=5, sticky="w")
-
     def _handle_sync_event(self):
         """Manejador interno para el botón de sincronización."""
         self.btn_sync.configure(text="⟳ Sincronizando...", state="disabled")

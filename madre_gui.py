@@ -363,8 +363,8 @@ class Dashboard(customtkinter.CTkTabview):
                     json={"username": username, "permiso_acceso": nuevo_estado},
                     timeout=1
                 )
-            except BaseException:
-                pass  # El servidor actualizará desde la BD compartida
+            except Exception:
+                pass
 
     def _crear_pestaña_sincronizacion(self):
         """Puebla la pestaña 'Sincronización de Contenido'."""
@@ -526,7 +526,7 @@ class Dashboard(customtkinter.CTkTabview):
                     text=f"Advertencia: Actualizado localmente ({exitosos} usuarios), servidor no respondió",
                     text_color="orange"
                 )
-        except BaseException:
+        except Exception:
             self.lbl_status_masiva.configure(
                 text=f"✓ Actualizado localmente: {exitosos} usuarios (servidor no disponible)",
                 text_color="green"

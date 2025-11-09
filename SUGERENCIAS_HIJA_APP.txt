@@ -1,0 +1,27 @@
+SUGERENCIAS PARA APLICACIÓN HIJA (SOCIOS)
+
+=== 10 MEJORAS DE CÓDIGO ===
+
+1. Implementar caché local de datos sincronizados para funcionamiento offline
+2. Añadir manejo de reconexión automática con exponential backoff mejorado
+3. Implementar cola de operaciones pendientes para ejecutar cuando haya conexión
+4. Usar threading.Event para control más eficiente de hilos de sincronización
+5. Implementar compresión de datos (gzip) en transferencias HTTP
+6. Añadir animaciones de transición suaves entre vistas con CTkinter
+7. Implementar sistema de actualización automática de la aplicación
+8. Usar keyring del sistema operativo para almacenar credenciales de forma segura
+9. Implementar telemetría y reporte automático de errores (crashlytics)
+10. Optimizar consumo de memoria al cargar imágenes grandes (lazy loading, thumbnails)
+
+=== 10 NUEVAS CARACTERÍSTICAS Y FUNCIONES ===
+
+1. Modo oscuro/claro personalizable por el usuario
+2. Widget de progreso visual con gráficos de evolución (peso, medidas, fuerza)
+3. Temporizador de entrenamiento con notificaciones de descanso
+4. Integración con smartwatch y fitness trackers (Garmin, Fitbit, Apple Watch)
+5. Sistema de logros y gamificación (badges, streaks, challenges)
+6. Reproductor de música integrado para entrenamientos
+7. Registro fotográfico de progreso con comparación lado a lado
+8. Calculadora de macros y calorías con recomendaciones personalizadas
+9. Social feed para compartir logros con otros miembros (opcional)
+10. Modo de entrenamiento guiado con videos de ejercicios y conteo de repeticiones

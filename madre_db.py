@@ -878,7 +878,7 @@ def export_message_to_txt(message_id: int, output_path: str) -> bool:
 
         return True
     except Exception as e:
-        print(f"Error exportando mensaje: {e}")
+        logger.error(f"Error exportando mensaje: {e}", exc_info=True)
         return False
 
 # ============================================================================
@@ -1616,13 +1616,4 @@ def get_user_notifications(user_id: int, unread_only: bool = False) -> List[Dict
         return [dict(row) for row in rows]
 
 
-# Inicializar la base de datos al importar el módulo
 init_database()
-
-# Import and initialize extended database features
-try:
-    from madre_db_extended import init_extended_database
-    init_extended_database()
-    logger.info("Extended database features initialized successfully")
-except Exception as e:
-    logger.error(f"Error initializing extended database features: {e}", exc_info=True)

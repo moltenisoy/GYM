@@ -11,6 +11,17 @@ def create_sample_users():
 
     print("Creando usuarios de ejemplo...")
 
+    if madre_db.create_user(
+        username="admin",
+        password="admin123",
+        nombre_completo="Administrador del Sistema",
+        email="admin@gym.example.com",
+        telefono="+34 600 000 000",
+        equipo="Administración",
+        permiso_acceso=True
+    ):
+        print("✓ Usuario 'admin' creado")
+
     # Usuario 1: Juan Pérez
     if madre_db.create_user(
         username="juan_perez",

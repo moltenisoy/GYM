@@ -1,0 +1,27 @@
+SUGERENCIAS PARA APLICACIÓN MADRE (ADMINISTRACIÓN)
+
+=== 10 MEJORAS DE CÓDIGO ===
+
+1. Implementar patrón Repository para separar lógica de base de datos de madre_db.py
+2. Añadir validación de datos de entrada con Pydantic en todos los endpoints de FastAPI
+3. Implementar caché en memoria (Redis/memcached) para datos de sincronización frecuentes
+4. Usar prepared statements y parámetros bind en todas las consultas SQL
+5. Implementar rate limiting en endpoints de API para prevenir abuso
+6. Añadir índices a la base de datos en columnas de búsqueda frecuente (username, fecha, etc)
+7. Implementar connection pooling para SQLite o migrar a PostgreSQL para mejor concurrencia
+8. Separar configuración de entorno por ambiente (dev/staging/prod) con archivos .env específicos
+9. Implementar pruebas unitarias con pytest y coverage mínimo del 80%
+10. Usar async/await en FastAPI para mejor rendimiento con operaciones I/O
+
+=== 10 NUEVAS CARACTERÍSTICAS Y FUNCIONES ===
+
+1. Dashboard de métricas en tiempo real (usuarios activos, reservas del día, ocupación)
+2. Sistema de notificaciones push para administradores (alertas, problemas, estadísticas)
+3. Exportación de reportes en múltiples formatos (PDF, Excel, CSV)
+4. Sistema de auditoría completo (log de todas las acciones administrativas)
+5. Gestión de membresías y pagos con integración de pasarelas de pago
+6. Calendario visual interactivo para gestionar clases y horarios
+7. Sistema de templates de correo electrónico personalizables
+8. Análisis predictivo de asistencia y tendencias de usuarios
+9. Integración con sistemas de control de acceso físico (torniquetes, cámaras)
+10. Panel de configuración de permisos granulares por rol (admin, trainer, recepción)

@@ -2,11 +2,11 @@
 #
 # Utilidades para entrenamiento: calculadora de discos, temporizadores, etc.
 
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 
 
 def calculate_plates(target_weight: float, bar_weight: float = 20.0,
-                    available_plates: List[float] = None) -> Dict[str, any]:
+                    available_plates: List[float] = None) -> Dict[str, Any]:
     """
     Calculadora de discos para barras.
     
