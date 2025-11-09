@@ -1,3 +1,4 @@
+
 import customtkinter
 import threading
 import time
@@ -15,7 +16,13 @@ customtkinter.set_default_color_theme("blue")
 
 logger.info("Hija application module loaded - Settings: %s", settings)
 
+
 class AppHija(customtkinter.CTk):
+    """
+    Clase principal de la aplicación Hija (Controlador).
+    Hereda de CTk para ser la ventana raíz.
+    Implementa sincronización automática en segundo plano.
+    """
 
     def __init__(self):
         super().__init__()
@@ -44,12 +51,19 @@ class AppHija(customtkinter.CTk):
         self._intentar_auto_login()
 
     def _limpiar_frames_actuales(self):
+        """
+        Destruye el frame actual para hacer espacio para el siguiente.
+        """
         if self._current_frame:
             self._current_frame.pack_forget()
             self._current_frame.destroy()
             self._current_frame = None
 
     def _intentar_auto_login(self):
+        """
+        Intenta realizar auto-login con credenciales guardadas.
+        Valida también que la sincronización esté al día (72 horas).
+        """
         creds = self.communicator.load_credentials()
         if not creds:
             self._mostrar_login()
@@ -72,6 +86,9 @@ class AppHija(customtkinter.CTk):
         self._mostrar_app_principal()
 
     def _mostrar_login(self):
+        """
+        Crea y muestra el LoginFrame.
+        """
         self._limpiar_frames_actuales()
 
         self.title("Aplicación Hija - Iniciar Sesión")
@@ -81,6 +98,10 @@ class AppHija(customtkinter.CTk):
         self._current_frame.pack(padx=20, pady=20, fill="both", expand=True)
 
     def _intentar_login(self, username: str, password: str):
+        """
+        Callback de lógica de negocio. Es llamado por LoginFrame.
+        Usa el 'communicator' para intentar el login con contraseña.
+        """
         success, data = self.communicator.attempt_login(username, password)
 
         if success:
@@ -92,6 +113,10 @@ class AppHija(customtkinter.CTk):
                 self._current_frame.show_status(data, is_error=True)
 
     def _mostrar_app_principal(self):
+        """
+        Crea y muestra el MainAppFrame después de un login exitoso.
+        Inicia la sincronización automática en segundo plano.
+        """
         self._limpiar_frames_actuales()
 
         nombre = self.current_user_data.get('nombre_completo', self.current_username)
@@ -114,6 +139,10 @@ class AppHija(customtkinter.CTk):
         self._iniciar_sync_automatica()
 
     def _intentar_sync(self):
+        """
+        Callback de lógica de negocio. Es llamado por MainAppFrame.
+        Usa el 'communicator' para obtener datos de sincronización.
+        """
         if not self.current_username:
             if isinstance(self._current_frame, MainAppFrame):
                 self._current_frame.show_sync_error("Error: No hay usuario autenticado.")
@@ -136,6 +165,10 @@ class AppHija(customtkinter.CTk):
                 self._current_frame.show_sync_error(error_msg)
 
     def _iniciar_sync_automatica(self):
+        """
+        Inicia un hilo de sincronización automática en segundo plano.
+        Sincroniza cada 5 minutos inicialmente, luego cada 30 minutos tras la primera sync exitosa.
+        """
         if self.sync_running:
             return
 
@@ -146,6 +179,10 @@ class AppHija(customtkinter.CTk):
         logger.info("Sincronización automática iniciada (intervalo: %ds)", self.sync_interval)
 
     def _sync_loop(self):
+        """
+        Loop de sincronización que se ejecuta en segundo plano.
+        Respeta el intervalo configurado (5 min inicial, 30 min después).
+        """
         time.sleep(2)
         self._sync_en_background()
 
@@ -158,6 +195,9 @@ class AppHija(customtkinter.CTk):
             self._sync_en_background()
 
     def _sync_en_background(self):
+        """
+        Realiza una sincronización en segundo plano sin bloquear la GUI.
+        """
         if not self.current_username:
             return
 
@@ -189,6 +229,7 @@ class AppHija(customtkinter.CTk):
             logger.error("Excepción en sincronización automática: %s", e, exc_info=True)
 
     def _enviar_mensaje(self, to_user: str, subject: str, body: str):
+        """Envía un mensaje a otro usuario."""
         if not isinstance(self._current_frame, MainAppFrame):
             return
 
@@ -206,6 +247,7 @@ class AppHija(customtkinter.CTk):
             )
 
     def _enviar_chat(self, to_user: str, message: str):
+        """Envía un mensaje de chat en vivo."""
         if not isinstance(self._current_frame, MainAppFrame):
             return
 
@@ -220,6 +262,7 @@ class AppHija(customtkinter.CTk):
             )
 
     def _cargar_mensajes(self):
+        """Carga los mensajes del usuario."""
         if not isinstance(self._current_frame, MainAppFrame):
             return
 
@@ -232,6 +275,7 @@ class AppHija(customtkinter.CTk):
             logger.error("Error cargando mensajes: %s", data.get('error', 'Desconocido'))
 
     def _cargar_chat(self):
+        """Carga el historial de chat."""
         if not isinstance(self._current_frame, MainAppFrame):
             return
 
@@ -244,6 +288,9 @@ class AppHija(customtkinter.CTk):
             logger.error("Error cargando chat: %s", data.get('error', 'Desconocido'))
 
     def destroy(self):
+        """
+        Override del método destroy para detener la sincronización al cerrar.
+        """
         logger.info("Shutting down Hija application...")
         self.sync_running = False
         if self.sync_thread and self.sync_thread.is_alive():
@@ -251,6 +298,7 @@ class AppHija(customtkinter.CTk):
             self.sync_thread.join(timeout=1)
         super().destroy()
         logger.info("Hija application closed")
+
 
 if __name__ == "__main__":
     logger.info("=== Starting Hija Application ===")

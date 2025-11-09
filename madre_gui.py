@@ -1,3 +1,4 @@
+
 import customtkinter
 import requests
 
@@ -6,7 +7,11 @@ import madre_db
 customtkinter.set_appearance_mode("dark")
 customtkinter.set_default_color_theme("blue")
 
+
 class UserDetailWindow(customtkinter.CTkToplevel):
+    """
+    Ventana emergente para ver detalles individuales de un usuario.
+    """
 
     def __init__(self, master, username: str, **kwargs):
         super().__init__(master, **kwargs)
@@ -127,7 +132,11 @@ class UserDetailWindow(customtkinter.CTkToplevel):
         )
         btn_close.pack(pady=10)
 
+
 class MessageDetailWindow(customtkinter.CTkToplevel):
+    """
+    Ventana emergente para ver detalles de un mensaje.
+    """
 
     def __init__(self, master, message: dict, **kwargs):
         super().__init__(master, **kwargs)
@@ -202,7 +211,12 @@ class MessageDetailWindow(customtkinter.CTkToplevel):
         )
         btn_close.pack(pady=10)
 
+
 class Dashboard(customtkinter.CTkTabview):
+    """
+    Panel de control principal, implementado como un CTkTabview.
+    Crea pestañas separadas para la gestión de usuarios y la sincronización.
+    """
 
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
@@ -218,6 +232,7 @@ class Dashboard(customtkinter.CTkTabview):
         self._crear_pestaña_mensajes()
 
     def _crear_pestaña_usuarios(self):
+        """Puebla la pestaña 'Gestión de Usuarios'."""
         tab_usuarios = self.tab("Gestión de Usuarios")
         tab_usuarios.grid_columnconfigure(0, weight=1)
 
@@ -246,6 +261,9 @@ class Dashboard(customtkinter.CTkTabview):
         self._actualizar_vista_usuarios()
 
     def _actualizar_vista_usuarios(self):
+        """
+        Limpia y vuelve a poblar el frame desplazable con los usuarios de madre_db.
+        """
         for widget in self.scrollable_frame_usuarios.winfo_children():
             widget.destroy()
 
@@ -294,9 +312,15 @@ class Dashboard(customtkinter.CTkTabview):
             switch_permiso.grid(row=0, column=3, padx=10, pady=5)
 
     def _ver_detalles_usuario(self, username: str):
+        """
+        Abre una ventana con los detalles completos del usuario.
+        """
         UserDetailWindow(self, username)
 
     def _conmutar_permiso(self, username: str):
+        """
+        Invierte el estado de 'permiso_acceso' para un usuario en madre_db.
+        """
         user = madre_db.get_user(username)
         if user:
             nuevo_estado = not bool(user.get("permiso_acceso", False))
@@ -313,6 +337,7 @@ class Dashboard(customtkinter.CTkTabview):
                 pass
 
     def _crear_pestaña_sincronizacion(self):
+        """Puebla la pestaña 'Sincronización de Contenido'."""
         tab_sync = self.tab("Sincronización de Contenido")
         tab_sync.grid_columnconfigure(0, weight=1)
         tab_sync.grid_rowconfigure(1, weight=1)
@@ -345,6 +370,7 @@ class Dashboard(customtkinter.CTkTabview):
         btn_publicar.grid(row=3, column=0, padx=20, pady=10)
 
     def _crear_pestaña_sync_masiva(self):
+        """Puebla la pestaña 'Sincronización Masiva'."""
         tab_masiva = self.tab("Sincronización Masiva")
         tab_masiva.grid_columnconfigure(0, weight=1)
 
@@ -399,6 +425,7 @@ class Dashboard(customtkinter.CTkTabview):
         self._actualizar_lista_sync_masiva()
 
     def _actualizar_lista_sync_masiva(self):
+        """Actualiza la lista de usuarios para sincronización masiva."""
         for widget in self.scrollable_frame_masiva.winfo_children():
             widget.destroy()
 
@@ -417,14 +444,17 @@ class Dashboard(customtkinter.CTkTabview):
             self.checkboxes_usuarios[username] = checkbox
 
     def _seleccionar_todos_usuarios(self):
+        """Selecciona todos los checkboxes de usuarios."""
         for checkbox in self.checkboxes_usuarios.values():
             checkbox.select()
 
     def _deseleccionar_todos_usuarios(self):
+        """Deselecciona todos los checkboxes de usuarios."""
         for checkbox in self.checkboxes_usuarios.values():
             checkbox.deselect()
 
     def _sincronizar_usuarios_masiva(self):
+        """Realiza sincronización masiva de usuarios seleccionados."""
         usuarios_seleccionados = [
             username for username, checkbox in self.checkboxes_usuarios.items()
             if checkbox.get()
@@ -467,6 +497,9 @@ class Dashboard(customtkinter.CTkTabview):
         print(f"Sincronización masiva: {exitosos} usuarios actualizados")
 
     def _publicar_sync_data(self):
+        """
+        Toma el texto del CTkTextbox y lo guarda en la base de datos.
+        """
         nuevo_contenido = self.textbox_sync.get("1.0", "end-1c")
 
         madre_db.update_sync_data(nuevo_contenido)
@@ -479,6 +512,7 @@ class Dashboard(customtkinter.CTkTabview):
         print(f"Nuevos datos de sincronización publicados. Versión: {nueva_version}")
 
     def _crear_pestaña_mensajes(self):
+        """Puebla la pestaña 'Buzón de Mensajes'."""
         tab_mensajes = self.tab("Buzón de Mensajes")
         tab_mensajes.grid_columnconfigure(0, weight=1)
         tab_mensajes.grid_rowconfigure(1, weight=1)
@@ -515,6 +549,7 @@ class Dashboard(customtkinter.CTkTabview):
         self._actualizar_mensajes()
 
     def _actualizar_mensajes(self):
+        """Actualiza la lista de mensajes del admin."""
         for widget in self.scrollable_mensajes.winfo_children():
             widget.destroy()
 
@@ -537,7 +572,7 @@ class Dashboard(customtkinter.CTkTabview):
             msg_frame.pack(fill="x", padx=5, pady=5)
 
             indicator = "●" if not msg.get('is_read') else "○"
-            color = "
+            color = "#2563eb" if not msg.get('is_read') else "gray"
 
             lbl_indicator = customtkinter.CTkLabel(
                 msg_frame,
@@ -604,6 +639,7 @@ class Dashboard(customtkinter.CTkTabview):
             btn_eliminar.pack(side="left", padx=2)
 
     def _ver_mensaje(self, msg: dict):
+        """Muestra los detalles de un mensaje en una ventana emergente."""
         madre_db.mark_message_read(msg['id'])
 
         dialog = MessageDetailWindow(self, msg)
@@ -611,10 +647,12 @@ class Dashboard(customtkinter.CTkTabview):
         dialog.protocol("WM_DELETE_WINDOW", lambda: self._cerrar_mensaje_dialog(dialog))
 
     def _cerrar_mensaje_dialog(self, dialog):
+        """Cierra el diálogo y actualiza la lista de mensajes."""
         dialog.destroy()
         self._actualizar_mensajes()
 
     def _responder_mensaje(self, msg: dict):
+        """Abre un diálogo para responder un mensaje."""
         dialog = customtkinter.CTkToplevel(self)
         dialog.title(f"Responder a {msg.get('from_user', 'Desconocido')}")
         dialog.geometry("600x400")
@@ -656,6 +694,7 @@ class Dashboard(customtkinter.CTkTabview):
         btn_enviar.grid(row=3, column=0, padx=10, pady=10)
 
     def _enviar_respuesta(self, dialog, to_user, subject, body, parent_id):
+        """Envía una respuesta a un mensaje."""
         if not to_user or not body.strip():
             return
 
@@ -665,6 +704,7 @@ class Dashboard(customtkinter.CTkTabview):
         self._actualizar_mensajes()
 
     def _exportar_mensaje(self, msg: dict):
+        """Exporta un mensaje a archivo .txt."""
         import tkinter.filedialog as filedialog
 
         filename = filedialog.asksaveasfilename(
@@ -679,10 +719,16 @@ class Dashboard(customtkinter.CTkTabview):
                 print(f"Mensaje exportado a: {filename}")
 
     def _eliminar_mensaje(self, msg: dict):
+        """Elimina un mensaje."""
         madre_db.delete_message(msg['id'])
         self._actualizar_mensajes()
 
+
 class AppMadre(customtkinter.CTk):
+    """
+    Clase principal de la aplicación GUI.
+    Contiene la ventana raíz y el Dashboard.
+    """
 
     def __init__(self):
         super().__init__()

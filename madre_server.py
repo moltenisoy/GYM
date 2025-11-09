@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -23,16 +24,34 @@ try:
 except Exception as e:
     logger.error(f"Error including extended API routers: {e}", exc_info=True)
 
+
+
 class AuthRequest(BaseModel):
     username: str = Field(..., min_length=1, description="Nombre de usuario")
     password: str = Field(..., min_length=1, description="Contraseña del usuario")
+
 
 class UserUpdateRequest(BaseModel):
     username: str
     permiso_acceso: bool
 
+
+
 @app.post("/autorizar", summary="Autoriza el inicio de sesión de una Aplicación Hija")
 async def autorizar_usuario(auth_request: AuthRequest):
+    """
+    Endpoint de autenticación con contraseña.
+    Verifica credenciales y valida que el usuario tenga permiso de acceso.
+
+    Args:
+        auth_request: Objeto con username y password
+
+    Returns:
+        Dict con status, usuario, nombre_completo, equipo, last_sync
+
+    Raises:
+        HTTPException: 401 si credenciales inválidas, 403 si acceso denegado
+    """
     logger.info(f"Intento de autorización para usuario: {auth_request.username}")
 
     success, user_data = madre_db.authenticate_user(
@@ -60,10 +79,24 @@ async def autorizar_usuario(auth_request: AuthRequest):
         "last_sync": datetime.now().isoformat()
     }
 
+
 @app.get("/validar_sync", summary="Valida si el usuario necesita sincronizar")
 async def validar_sync(
     usuario: str = Query(..., description="Nombre de usuario")
 ):
+    """
+    Valida si el usuario ha sincronizado en las últimas horas configuradas.
+    Si no, debe bloquearse el acceso en la app Hija.
+
+    Args:
+        usuario: Nombre de usuario a validar
+
+    Returns:
+        Dict con requiere_sync, bloqueado, mensaje, horas_desde_sync
+
+    Raises:
+        HTTPException: 404 si usuario no encontrado
+    """
     logger.debug(f"Validando estado de sincronización para usuario: {usuario}")
 
     user = madre_db.get_user(usuario)
@@ -109,10 +142,15 @@ async def validar_sync(
             "mensaje": "Error al validar sincronización"
         }
 
+
 @app.get("/sincronizar_datos", summary="Proporciona datos de sincronización completos a una Hija")
 async def obtener_datos_sync(
     usuario: str = Query(..., description="El nombre de usuario de la Hija que solicita los datos")
 ):
+    """
+    Endpoint de sincronización completa.
+    Devuelve todos los datos del usuario: perfil, cronograma, galería, etc.
+    """
     user = madre_db.get_user(usuario)
     if not user:
         raise HTTPException(status_code=404, detail="Usuario solicitante desconocido.")
@@ -146,8 +184,12 @@ async def obtener_datos_sync(
         "sync_content": sync_data
     }
 
+
 @app.post("/actualizar_permiso", summary="Actualiza el permiso de acceso de un usuario")
 async def actualizar_permiso(request: UserUpdateRequest):
+    """
+    Endpoint para que la app Madre actualice permisos de usuarios.
+    """
     success = madre_db.update_user_permission(request.username, request.permiso_acceso)
     if not success:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
@@ -158,8 +200,13 @@ async def actualizar_permiso(request: UserUpdateRequest):
         "permiso_acceso": request.permiso_acceso
     }
 
+
 @app.post("/sincronizar_masiva", summary="Fuerza sincronización para múltiples usuarios")
 async def sincronizar_masiva(usernames: list[str]):
+    """
+    Endpoint para sincronización masiva.
+    Marca la hora de sincronización para múltiples usuarios.
+    """
     resultados = []
     for username in usernames:
         success = madre_db.update_user_sync(username)
@@ -174,8 +221,13 @@ async def sincronizar_masiva(usernames: list[str]):
         "resultados": resultados
     }
 
+
 @app.get("/usuarios", summary="Obtiene lista de todos los usuarios")
 async def obtener_usuarios():
+    """
+    Endpoint para obtener la lista completa de usuarios.
+    Usado por la app Madre para gestión.
+    """
     usuarios = madre_db.get_all_users()
     for user in usuarios:
         user.pop('password_hash', None)
@@ -185,6 +237,8 @@ async def obtener_usuarios():
         "usuarios": usuarios
     }
 
+
+
 class MessageRequest(BaseModel):
     from_user: str
     to_user: str
@@ -192,13 +246,16 @@ class MessageRequest(BaseModel):
     body: str
     parent_message_id: Optional[int] = None
 
+
 class ChatMessageRequest(BaseModel):
     from_user: str
     to_user: str
     message: str
 
+
 @app.post("/enviar_mensaje", summary="Enviar mensaje")
 async def enviar_mensaje(request: MessageRequest):
+    """Endpoint para enviar un mensaje."""
     message_id = madre_db.send_message(
         request.from_user,
         request.to_user,
@@ -216,11 +273,13 @@ async def enviar_mensaje(request: MessageRequest):
     else:
         raise HTTPException(status_code=500, detail="Error al enviar mensaje")
 
+
 @app.get("/obtener_mensajes", summary="Obtener mensajes del usuario")
 async def obtener_mensajes(
     usuario: str = Query(..., description="Nombre de usuario"),
     solo_no_leidos: bool = Query(False, description="Solo mensajes no leídos")
 ):
+    """Endpoint para obtener mensajes de un usuario."""
     messages = madre_db.get_user_messages(usuario, include_read=not solo_no_leidos)
     unread_count = madre_db.count_unread_messages(usuario)
 
@@ -231,8 +290,10 @@ async def obtener_mensajes(
         "mensajes": messages
     }
 
+
 @app.get("/obtener_mensaje/{message_id}", summary="Obtener mensaje específico")
 async def obtener_mensaje(message_id: int):
+    """Endpoint para obtener un mensaje específico con adjuntos."""
     message = madre_db.get_message_by_id(message_id)
     if not message:
         raise HTTPException(status_code=404, detail="Mensaje no encontrado")
@@ -245,24 +306,30 @@ async def obtener_mensaje(message_id: int):
         "mensaje": message
     }
 
+
 @app.post("/marcar_leido/{message_id}", summary="Marcar mensaje como leído")
 async def marcar_leido(message_id: int):
+    """Endpoint para marcar un mensaje como leído."""
     success = madre_db.mark_message_read(message_id)
     if success:
         return {"status": "marcado_leido", "message_id": message_id}
     else:
         raise HTTPException(status_code=404, detail="Mensaje no encontrado")
 
+
 @app.delete("/eliminar_mensaje/{message_id}", summary="Eliminar mensaje")
 async def eliminar_mensaje(message_id: int):
+    """Endpoint para eliminar un mensaje."""
     success = madre_db.delete_message(message_id)
     if success:
         return {"status": "mensaje_eliminado", "message_id": message_id}
     else:
         raise HTTPException(status_code=404, detail="Mensaje no encontrado")
 
+
 @app.get("/contar_no_leidos", summary="Contar mensajes no leídos")
 async def contar_no_leidos(usuario: str = Query(..., description="Nombre de usuario")):
+    """Endpoint para contar mensajes no leídos."""
     count = madre_db.count_unread_messages(usuario)
     return {
         "status": "ok",
@@ -270,8 +337,11 @@ async def contar_no_leidos(usuario: str = Query(..., description="Nombre de usua
         "mensajes_no_leidos": count
     }
 
+
+
 @app.post("/enviar_chat", summary="Enviar mensaje de chat en vivo")
 async def enviar_chat(request: ChatMessageRequest):
+    """Endpoint para enviar un mensaje de chat en vivo."""
     chat_id = madre_db.send_chat_message(
         request.from_user,
         request.to_user,
@@ -287,12 +357,14 @@ async def enviar_chat(request: ChatMessageRequest):
     else:
         raise HTTPException(status_code=500, detail="Error al enviar chat")
 
+
 @app.get("/obtener_chat", summary="Obtener historial de chat")
 async def obtener_chat(
     user1: str = Query(..., description="Usuario 1"),
     user2: str = Query(..., description="Usuario 2"),
     limit: int = Query(50, description="Límite de mensajes")
 ):
+    """Endpoint para obtener historial de chat entre dos usuarios."""
     messages = madre_db.get_chat_history(user1, user2, limit)
     return {
         "status": "ok",
@@ -300,16 +372,20 @@ async def obtener_chat(
         "mensajes": messages
     }
 
+
 @app.post("/marcar_chat_leido", summary="Marcar mensajes de chat como leídos")
 async def marcar_chat_leido(
     from_user: str = Query(..., description="Usuario remitente"),
     to_user: str = Query(..., description="Usuario destinatario")
 ):
+    """Endpoint para marcar mensajes de chat como leídos."""
     madre_db.mark_chat_messages_read(from_user, to_user)
     return {"status": "chat_marcado_leido"}
 
+
 @app.get("/contar_chat_no_leidos", summary="Contar mensajes de chat no leídos")
 async def contar_chat_no_leidos(usuario: str = Query(..., description="Nombre de usuario")):
+    """Endpoint para contar mensajes de chat no leídos."""
     count = madre_db.count_unread_chat_messages(usuario)
     return {
         "status": "ok",
@@ -317,12 +393,15 @@ async def contar_chat_no_leidos(usuario: str = Query(..., description="Nombre de
         "chat_no_leidos": count
     }
 
+
+
 @app.post("/registrar_servidor_madre", summary="Registrar otro servidor Madre")
 async def registrar_servidor_madre(
     server_name: str = Query(..., description="Nombre del servidor"),
     server_url: str = Query(..., description="URL del servidor"),
     sync_token: str = Query("", description="Token de sincronización")
 ):
+    """Endpoint para registrar otro servidor Madre para sincronización."""
     success = madre_db.add_madre_server(server_name, server_url, sync_token)
     if success:
         return {
@@ -332,8 +411,10 @@ async def registrar_servidor_madre(
     else:
         raise HTTPException(status_code=400, detail="Servidor ya registrado")
 
+
 @app.get("/obtener_servidores_madre", summary="Obtener servidores Madre registrados")
 async def obtener_servidores_madre():
+    """Endpoint para obtener todos los servidores Madre registrados."""
     servers = madre_db.get_all_madre_servers()
     return {
         "status": "ok",
@@ -341,8 +422,16 @@ async def obtener_servidores_madre():
         "servidores": servers
     }
 
+
 @app.get("/health", summary="Health check endpoint")
 async def health_check():
+    """
+    Health check endpoint para verificar el estado del servidor.
+    Verifica conectividad con la base de datos.
+
+    Returns:
+        Dict con status, version, database_status
+    """
     try:
         _ = len(madre_db.get_all_users())
         db_status = "healthy"
@@ -357,10 +446,13 @@ async def health_check():
         "database_status": db_status
     }
 
+
+
 class ClassBookingRequest(BaseModel):
     username: str
     schedule_id: int
     fecha_clase: str
+
 
 class ClassRatingRequest(BaseModel):
     username: str
@@ -371,8 +463,10 @@ class ClassRatingRequest(BaseModel):
     instructor_rating: Optional[int] = Field(None, ge=1, le=5)
     comentario: Optional[str] = ""
 
+
 @app.get("/clases", summary="Obtiene todas las clases disponibles")
 async def get_classes(active_only: bool = True):
+    """Retorna lista de todas las clases."""
     try:
         classes = madre_db.get_all_classes(active_only)
         return {"status": "success", "clases": classes}
@@ -380,8 +474,10 @@ async def get_classes(active_only: bool = True):
         logger.error(f"Error getting classes: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al obtener clases")
 
+
 @app.get("/clases/horarios", summary="Obtiene horarios de clases")
 async def get_schedules(class_id: Optional[int] = None):
+    """Retorna horarios de clases disponibles."""
     try:
         schedules = madre_db.get_class_schedules(class_id)
         return {"status": "success", "horarios": schedules}
@@ -389,8 +485,10 @@ async def get_schedules(class_id: Optional[int] = None):
         logger.error(f"Error getting schedules: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al obtener horarios")
 
+
 @app.post("/clases/reservar", summary="Reserva una clase (One-Click)")
 async def book_class(booking: ClassBookingRequest):
+    """One-Click Booking: Reserva una clase con un solo toque."""
     try:
         user = madre_db.get_user(booking.username)
         if not user:
@@ -421,8 +519,10 @@ async def book_class(booking: ClassBookingRequest):
         logger.error(f"Error booking class: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al reservar clase")
 
+
 @app.get("/clases/mis-reservas", summary="Obtiene reservas del usuario")
 async def get_my_bookings(username: str):
+    """Retorna las reservas de clases del usuario."""
     try:
         user = madre_db.get_user(username)
         if not user:
@@ -436,8 +536,10 @@ async def get_my_bookings(username: str):
         logger.error(f"Error getting bookings: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al obtener reservas")
 
+
 @app.post("/clases/cancelar", summary="Cancela una reserva")
 async def cancel_booking(booking_id: int):
+    """Cancela una reserva de clase."""
     try:
         success, message = madre_db.cancel_booking(booking_id)
         if success:
@@ -448,8 +550,10 @@ async def cancel_booking(booking_id: int):
         logger.error(f"Error cancelling booking: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al cancelar reserva")
 
+
 @app.post("/clases/calificar", summary="Califica una clase")
 async def rate_class(rating: ClassRatingRequest):
+    """Califica una clase después de asistir (Quick Rating)."""
     try:
         user = madre_db.get_user(rating.username)
         if not user:
@@ -471,6 +575,8 @@ async def rate_class(rating: ClassRatingRequest):
         logger.error(f"Error rating class: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al calificar clase")
 
+
+
 class EquipmentReservationRequest(BaseModel):
     username: str
     equipment_id: int
@@ -478,8 +584,10 @@ class EquipmentReservationRequest(BaseModel):
     hora_inicio: str
     hora_fin: str
 
+
 @app.get("/equipos", summary="Obtiene equipos y zonas disponibles")
 async def get_equipment():
+    """Retorna lista de equipos y zonas reservables."""
     try:
         equipment = madre_db.get_all_equipment_zones()
         return {"status": "success", "equipos": equipment}
@@ -487,8 +595,10 @@ async def get_equipment():
         logger.error(f"Error getting equipment: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al obtener equipos")
 
+
 @app.post("/equipos/reservar", summary="Reserva equipo o zona")
 async def reserve_equipment(reservation: EquipmentReservationRequest):
+    """Reserva un equipo o zona por franjas horarias."""
     try:
         user = madre_db.get_user(reservation.username)
         if not user:
@@ -509,6 +619,8 @@ async def reserve_equipment(reservation: EquipmentReservationRequest):
         logger.error(f"Error reserving equipment: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al reservar equipo")
 
+
+
 class WorkoutLogRequest(BaseModel):
     username: str
     exercise_id: int
@@ -518,8 +630,10 @@ class WorkoutLogRequest(BaseModel):
     peso: Optional[float] = None
     descanso_segundos: Optional[int] = None
 
+
 @app.get("/ejercicios", summary="Obtiene lista de ejercicios")
 async def get_exercises():
+    """Retorna todos los ejercicios disponibles."""
     try:
         exercises = madre_db.get_all_exercises()
         return {"status": "success", "ejercicios": exercises}
@@ -527,8 +641,10 @@ async def get_exercises():
         logger.error(f"Error getting exercises: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al obtener ejercicios")
 
+
 @app.post("/workout/log", summary="Registra serie de ejercicio (Quick Log)")
 async def log_workout(log: WorkoutLogRequest):
+    """Quick Log: Registra una serie de ejercicio rápidamente."""
     try:
         user = madre_db.get_user(log.username)
         if not user:
@@ -549,8 +665,10 @@ async def log_workout(log: WorkoutLogRequest):
         logger.error(f"Error logging workout: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al registrar entrenamiento")
 
+
 @app.get("/workout/historial", summary="Obtiene historial de ejercicio")
 async def get_exercise_history(username: str, exercise_id: int, limit: int = 10):
+    """Retorna el historial de un ejercicio para el usuario."""
     try:
         user = madre_db.get_user(username)
         if not user:
@@ -564,8 +682,11 @@ async def get_exercise_history(username: str, exercise_id: int, limit: int = 10)
         logger.error(f"Error getting exercise history: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al obtener historial")
 
+
+
 @app.post("/checkin/generate-token", summary="Genera token de check-in QR/NFC")
 async def generate_checkin_token(username: str, token_type: str = "qr"):
+    """Genera un token único de check-in para acceso digital."""
     try:
         user = madre_db.get_user(username)
         if not user:
@@ -583,8 +704,10 @@ async def generate_checkin_token(username: str, token_type: str = "qr"):
         logger.error(f"Error generating token: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al generar token")
 
+
 @app.post("/checkin", summary="Registra check-in de usuario")
 async def checkin(username: str, location: str = "entrada"):
+    """Registra check-in digital del usuario en el gimnasio."""
     try:
         user = madre_db.get_user(username)
         if not user:
@@ -602,8 +725,11 @@ async def checkin(username: str, location: str = "entrada"):
         logger.error(f"Error checking in: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al registrar check-in")
 
+
+
 @app.get("/notificaciones", summary="Obtiene notificaciones del usuario")
 async def get_notifications(username: str, unread_only: bool = False):
+    """Retorna notificaciones del usuario."""
     try:
         user = madre_db.get_user(username)
         if not user:
@@ -617,8 +743,11 @@ async def get_notifications(username: str, unread_only: bool = False):
         logger.error(f"Error getting notifications: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al obtener notificaciones")
 
+
+
 @app.post("/utilidades/calculadora-discos", summary="Calcula discos para barra")
 async def calculate_plates(target_weight: float, bar_weight: float = 20.0):
+    """Calculadora de discos: indica qué discos poner en la barra."""
     try:
         from shared.workout_utils import calculate_plates as calc_plates
         result = calc_plates(target_weight, bar_weight)
@@ -627,8 +756,15 @@ async def calculate_plates(target_weight: float, bar_weight: float = 20.0):
         logger.error(f"Error calculating plates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error al calcular discos")
 
+
 @app.get("/", summary="Endpoint raíz de estado")
 async def root():
+    """
+    Endpoint simple para verificar que el servidor está en línea.
+
+    Returns:
+        Dict con mensaje, version, features
+    """
     logger.debug("Root endpoint accessed")
     return {
         "mensaje": "Servidor de la Aplicación Madre está en línea.",

@@ -1,6 +1,10 @@
+
+
 import madre_db
 
+
 def create_sample_users():
+    """Crea usuarios de ejemplo con datos completos."""
 
     print("Creando usuarios de ejemplo...")
 
@@ -237,7 +241,9 @@ def create_sample_users():
             madre_db.add_photo_to_gallery(user_id, photo_path, descripcion)
         print(f"  - {len(gallery_photos)} fotos añadidas a la galería")
 
+
 def create_initial_sync_data():
+    """Crea el contenido inicial de sincronización."""
     print("\nCreando contenido de sincronización global...")
 
     contenido = """Bienvenido al Sistema de Gestión de Gimnasio
@@ -249,9 +255,14 @@ Este sistema te permite:
 - Sincronizar tus datos automáticamente
 
 ¡Mantente activo y alcanza tus objetivos!
+"""
+
+    madre_db.update_sync_data(contenido, "1.0.0")
     print("✓ Contenido de sincronización creado")
 
+
 def main():
+    """Función principal."""
     print("=" * 60)
     print("POBLANDO BASE DE DATOS DEL SISTEMA GYM")
     print("=" * 60)
@@ -290,7 +301,9 @@ def main():
     print("  - Racks de sentadillas, Pistas de pádel, Carriles de piscina")
     print()
 
+
 def populate_classes_and_schedules():
+    """Crea clases grupales y sus horarios."""
     print("\nCreando clases grupales y horarios...")
 
     from datetime import datetime, timedelta
@@ -411,7 +424,9 @@ def populate_classes_and_schedules():
                 if schedule_id:
                     print(f"  - Horario {horario['dia_semana']} {horario['hora_inicio']} en {horario['sala']}")
 
+
 def populate_exercises():
+    """Crea ejercicios comunes de gimnasio."""
     print("\nCreando ejercicios...")
 
     exercises = [
@@ -447,7 +462,9 @@ def populate_exercises():
         if exercise_id:
             print(f"✓ Ejercicio '{exercise['nombre']}' creado")
 
+
 def populate_equipment_zones():
+    """Crea equipos y zonas reservables."""
     print("\nCreando equipos y zonas reservables...")
 
     equipment_zones = [
@@ -475,6 +492,7 @@ def populate_equipment_zones():
         )
         if equipment_id:
             print(f"✓ Equipo/Zona '{equipment['nombre']}' creado")
+
 
 if __name__ == "__main__":
     main()

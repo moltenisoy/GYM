@@ -1,3 +1,9 @@
+
+"""
+Demo script para probar las nuevas funcionalidades del sistema de gimnasio.
+Este script demuestra el uso de las APIs y funciones implementadas.
+"""
+
 import requests
 from datetime import datetime, timedelta
 from shared.workout_utils import calculate_plates, format_plates_result, calculate_rest_time, format_time
@@ -6,12 +12,16 @@ BASE_URL = "http://localhost:8000"
 USERNAME = "juan_perez"
 REQUEST_TIMEOUT = 10
 
+
 def print_section(title):
+    """Imprime un separador de sección."""
     print("\n" + "=" * 60)
     print(f"  {title}")
     print("=" * 60 + "\n")
 
+
 def demo_plates_calculator():
+    """Demuestra la calculadora de discos."""
     print_section("1. CALCULADORA DE DISCOS")
 
     weights = [60, 100, 142.5]
@@ -21,7 +31,9 @@ def demo_plates_calculator():
         result = calculate_plates(weight, bar_weight=20.0)
         print(format_plates_result(result))
 
+
 def demo_rest_timer():
+    """Demuestra el temporizador de descanso."""
     print_section("2. TEMPORIZADOR DE DESCANSO")
 
     exercises = [
@@ -36,7 +48,9 @@ def demo_rest_timer():
         formatted = format_time(rest_seconds)
         print(f"{exercise_type.capitalize()} - {intensity}: {formatted}")
 
+
 def demo_list_classes():
+    """Lista las clases disponibles."""
     print_section("3. CLASES DISPONIBLES")
 
     try:
@@ -55,7 +69,9 @@ def demo_list_classes():
     except Exception as e:
         print(f"Error: {e}")
 
+
 def demo_class_schedules():
+    """Muestra los horarios de clases."""
     print_section("4. HORARIOS DE CLASES")
 
     try:
@@ -83,7 +99,9 @@ def demo_class_schedules():
     except Exception as e:
         print(f"Error: {e}")
 
+
 def demo_book_class():
+    """Demuestra la reserva de una clase."""
     print_section("5. RESERVA DE CLASE (ONE-CLICK)")
 
     next_monday = datetime.now() + timedelta(days=(7 - datetime.now().weekday()))
@@ -115,7 +133,9 @@ def demo_book_class():
     except Exception as e:
         print(f"Error: {e}")
 
+
 def demo_equipment():
+    """Muestra los equipos reservables."""
     print_section("6. EQUIPOS Y ZONAS RESERVABLES")
 
     try:
@@ -139,7 +159,9 @@ def demo_equipment():
     except Exception as e:
         print(f"Error: {e}")
 
+
 def demo_exercises():
+    """Lista los ejercicios disponibles."""
     print_section("7. EJERCICIOS DISPONIBLES")
 
     try:
@@ -164,7 +186,9 @@ def demo_exercises():
     except Exception as e:
         print(f"Error: {e}")
 
+
 def demo_workout_log():
+    """Demuestra el registro de entrenamiento."""
     print_section("8. QUICK LOG - REGISTRO DE ENTRENAMIENTO")
 
     try:
@@ -203,7 +227,9 @@ def demo_workout_log():
     except Exception:
         print("Error: No se pudo obtener el historial de ejercicio")
 
+
 def demo_checkin_token():
+    """Demuestra la generación de token de check-in."""
     print_section("9. CHECK-IN DIGITAL (QR/NFC)")
 
     try:
@@ -222,7 +248,9 @@ def demo_checkin_token():
     except Exception:
         print("Error: No se pudo generar token de check-in")
 
+
 def demo_api_status():
+    """Verifica el estado del servidor."""
     print_section("0. ESTADO DEL SERVIDOR")
 
     try:
@@ -240,7 +268,9 @@ def demo_api_status():
 
     return True
 
+
 def main():
+    """Función principal del demo."""
     print("\n" + "=" * 60)
     print("  DEMO - NUEVAS FUNCIONALIDADES DEL SISTEMA DE GIMNASIO")
     print("=" * 60)
@@ -264,6 +294,7 @@ def main():
     print("=" * 60)
     print("\n✅ Todas las funcionalidades están operativas!")
     print("📖 Ver NUEVAS_FUNCIONALIDADES.md para documentación completa\n")
+
 
 if __name__ == "__main__":
     main()

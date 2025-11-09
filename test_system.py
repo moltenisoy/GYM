@@ -1,3 +1,9 @@
+
+"""
+Test script to verify the complete GYM system functionality.
+Tests database, API, and authentication flow.
+"""
+
 import sys
 import time
 import requests
@@ -8,21 +14,31 @@ BLUE = '\033[94m'
 YELLOW = '\033[93m'
 RESET = '\033[0m'
 
+
 def print_header(text):
+    """Print a colored header."""
     print(f"\n{BLUE}{'=' * 60}{RESET}")
     print(f"{BLUE}{text}{RESET}")
     print(f"{BLUE}{'=' * 60}{RESET}\n")
 
+
 def print_success(text):
+    """Print success message."""
     print(f"{GREEN}✓ {text}{RESET}")
 
+
 def print_error(text):
+    """Print error message."""
     print(f"{RED}✗ {text}{RESET}")
 
+
 def print_info(text):
+    """Print info message."""
     print(f"{YELLOW}ℹ {text}{RESET}")
 
+
 def test_database():
+    """Test database operations."""
     print_header("TEST 1: Database Operations")
 
     try:
@@ -72,7 +88,9 @@ def test_database():
         print_error(f"Database test failed: {e}")
         return False
 
+
 def test_api_server(base_url='http://127.0.0.1:8000'):
+    """Test API server endpoints."""
     print_header("TEST 2: API Server Endpoints")
 
     try:
@@ -178,7 +196,9 @@ def test_api_server(base_url='http://127.0.0.1:8000'):
         print_error(f"API test failed: {e}")
         return False
 
+
 def test_credentials():
+    """Test credential storage."""
     print_header("TEST 3: Credential Management")
 
     try:
@@ -222,7 +242,9 @@ def test_credentials():
         print_error(f"Credential test failed: {e}")
         return False
 
+
 def main():
+    """Run all tests."""
     print(f"\n{BLUE}╔════════════════════════════════════════════════════════════╗{RESET}")
     print(f"{BLUE}║     SISTEMA GYM v2.0 - SUITE DE PRUEBAS COMPLETA         ║{RESET}")
     print(f"{BLUE}╚════════════════════════════════════════════════════════════╝{RESET}")
@@ -259,6 +281,7 @@ def main():
     print(f"{BLUE}{'=' * 60}{RESET}\n")
 
     return passed == total
+
 
 if __name__ == "__main__":
     success = main()

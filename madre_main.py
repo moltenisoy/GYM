@@ -1,3 +1,4 @@
+
 import threading
 import uvicorn
 from madre_gui import AppMadre
@@ -9,7 +10,16 @@ logger = setup_logger(__name__, log_file="madre_main.log")
 
 settings = get_madre_settings()
 
+
 def iniciar_servidor() -> None:
+    """
+    Función objetivo para el hilo del servidor.
+    Inicia el servidor uvicorn. Esta es una llamada BLOQUEANTE
+    que se ejecutará dentro de su propio hilo.
+
+    Raises:
+        Exception: Si el servidor no puede iniciarse
+    """
     logger.info("Iniciando servidor FastAPI/uvicorn en http://%s:%s", settings.HOST, settings.PORT)
     try:
         uvicorn_log_level = settings.LOG_LEVEL.lower()
@@ -20,6 +30,7 @@ def iniciar_servidor() -> None:
     except Exception as e:
         logger.error("Error al iniciar el servidor uvicorn: %s", e, exc_info=True)
         raise
+
 
 if __name__ == "__main__":
     logger.info("=== Iniciando Sistema de Gestión del Gimnasio (Aplicación Madre) ===")

@@ -1,3 +1,8 @@
+"""
+Cargador de configuración de ajustes para el sistema GYM.
+Carga configuraciones desde variables de entorno con valores por defecto como respaldo.
+"""
+
 import os
 from typing import Any, Optional
 from shared.constants import (
@@ -15,7 +20,23 @@ from shared.constants import (
     HIJA_LOCAL_DIR_NAME
 )
 
+
 def get_env(key: str, default: Any = None, cast_type: type = str) -> Any:
+    """
+    Obtiene variable de entorno con conversión de tipo y valor por defecto.
+
+    Args:
+        key: Nombre de la variable de entorno
+        default: Valor por defecto si no se encuentra
+        cast_type: Tipo al que convertir el valor (int, bool, str, etc.)
+
+    Returns:
+        Valor de la variable de entorno convertido al tipo especificado, o el valor por defecto
+
+    Ejemplo:
+        >>> port = get_env('MADRE_PORT', 8000, int)
+        >>> debug = get_env('DEBUG', False, bool)
+    """
     value = os.getenv(key)
 
     if value is None:
@@ -29,7 +50,9 @@ def get_env(key: str, default: Any = None, cast_type: type = str) -> Any:
     except (ValueError, TypeError):
         return default
 
+
 class MadreSettings:
+    """Configuración de ajustes para la aplicación Madre (servidor)."""
 
     def __init__(self):
         self.HOST: str = get_env('MADRE_HOST', DEFAULT_HOST_IP)
@@ -40,7 +63,9 @@ class MadreSettings:
     def __repr__(self) -> str:
         return f"MadreSettings(HOST={self.HOST}, PORT={self.PORT}, DB_PATH={self.DB_PATH})"
 
+
 class HijaSettings:
+    """Configuración de ajustes para la aplicación Hija (cliente)."""
 
     def __init__(self):
         self.MADRE_BASE_URL: str = get_env('MADRE_BASE_URL', DEFAULT_MADRE_BASE_URL)
@@ -56,22 +81,58 @@ class HijaSettings:
     def __repr__(self) -> str:
         return f"HijaSettings(MADRE_BASE_URL={self.MADRE_BASE_URL}, LOG_LEVEL={self.LOG_LEVEL})"
 
+
 _madre_settings: Optional[MadreSettings] = None
 _hija_settings: Optional[HijaSettings] = None
 
+
 def get_madre_settings() -> MadreSettings:
+    """
+    Obtiene la instancia singleton de configuración Madre.
+
+    Returns:
+        Instancia de MadreSettings
+
+    Ejemplo:
+        >>> settings = get_madre_settings()
+        >>> print(settings.HOST, settings.PORT)
+    """
     global _madre_settings
     if _madre_settings is None:
         _madre_settings = MadreSettings()
     return _madre_settings
 
+
 def get_hija_settings() -> HijaSettings:
+    """
+    Obtiene la instancia singleton de configuración Hija.
+
+    Returns:
+        Instancia de HijaSettings
+
+    Ejemplo:
+        >>> settings = get_hija_settings()
+        >>> print(settings.MADRE_BASE_URL)
+    """
     global _hija_settings
     if _hija_settings is None:
         _hija_settings = HijaSettings()
     return _hija_settings
 
+
 def load_env_file(env_path: str = '.env') -> bool:
+    """
+    Carga variables de entorno desde un archivo .env.
+
+    Args:
+        env_path: Ruta al archivo .env (por defecto: .env en directorio actual)
+
+    Returns:
+        True si el archivo se cargó exitosamente, False en caso contrario
+
+    Ejemplo:
+        >>> load_env_file('config/.env')
+    """
     if not os.path.exists(env_path):
         return False
 
@@ -79,7 +140,7 @@ def load_env_file(env_path: str = '.env') -> bool:
         with open(env_path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
-                if not line or line.startswith('
+                if not line or line.startswith('#'):
                     continue
 
                 if '=' in line:
@@ -98,6 +159,7 @@ def load_env_file(env_path: str = '.env') -> bool:
     except Exception as e:
         print(f"Error cargando archivo .env: {e}")
         return False
+
 
 load_env_file('.env')
 load_env_file('config/.env')

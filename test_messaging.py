@@ -1,3 +1,9 @@
+
+"""
+Test script for the new messaging and chat features.
+Tests database operations and API endpoints for messaging.
+"""
+
 import sys
 import madre_db
 
@@ -7,21 +13,31 @@ BLUE = '\033[94m'
 YELLOW = '\033[93m'
 RESET = '\033[0m'
 
+
 def print_header(text):
+    """Print a colored header."""
     print(f"\n{BLUE}{'=' * 60}{RESET}")
     print(f"{BLUE}{text}{RESET}")
     print(f"{BLUE}{'=' * 60}{RESET}\n")
 
+
 def print_success(text):
+    """Print success message."""
     print(f"{GREEN}✓ {text}{RESET}")
 
+
 def print_error(text):
+    """Print error message."""
     print(f"{RED}✗ {text}{RESET}")
 
+
 def print_info(text):
+    """Print info message."""
     print(f"{YELLOW}ℹ {text}{RESET}")
 
+
 def test_messaging():
+    """Test messaging functionality."""
     print_header("TEST 1: Messaging System")
 
     try:
@@ -98,7 +114,9 @@ def test_messaging():
         print_error(f"Messaging test failed: {e}")
         return False
 
+
 def test_chat():
+    """Test chat functionality."""
     print_header("TEST 2: Live Chat System")
 
     try:
@@ -152,7 +170,9 @@ def test_chat():
         print_error(f"Chat test failed: {e}")
         return False
 
+
 def test_multi_madre():
+    """Test multi-madre server functionality."""
     print_header("TEST 3: Multi-Madre Server Support")
 
     try:
@@ -189,7 +209,9 @@ def test_multi_madre():
         print_error(f"Multi-madre test failed: {e}")
         return False
 
+
 def main():
+    """Run all messaging tests."""
     print(f"\n{BLUE}╔════════════════════════════════════════════════════════════╗{RESET}")
     print(f"{BLUE}║  SISTEMA GYM v3.0 - PRUEBAS DE MENSAJERÍA Y CHAT        ║{RESET}")
     print(f"{BLUE}╚════════════════════════════════════════════════════════════╝{RESET}")
@@ -223,6 +245,7 @@ def main():
     print(f"{BLUE}{'=' * 60}{RESET}\n")
 
     return passed == total
+
 
 if __name__ == "__main__":
     success = main()

@@ -1,7 +1,20 @@
+
 from typing import List, Dict, Tuple, Any
+
 
 def calculate_plates(target_weight: float, bar_weight: float = 20.0,
                     available_plates: List[float] = None) -> Dict[str, Any]:
+    """
+    Calculadora de discos para barras.
+    
+    Args:
+        target_weight: Peso objetivo total en kg
+        bar_weight: Peso de la barra en kg (default 20kg - barra olímpica estándar)
+        available_plates: Lista de discos disponibles en kg
+        
+    Returns:
+        Dict con la configuración de discos necesarios
+    """
     if available_plates is None:
         available_plates = [25.0, 20.0, 15.0, 10.0, 5.0, 2.5, 2.0, 1.25, 1.0, 0.5]
     
@@ -66,7 +79,14 @@ def calculate_plates(target_weight: float, bar_weight: float = 20.0,
         'message': 'Configuración de discos calculada correctamente'
     }
 
+
 def format_plates_result(result: Dict) -> str:
+    """
+    Formatea el resultado de calculate_plates para mostrar en UI.
+    
+    Returns:
+        String formateado con la configuración de discos
+    """
     if not result['success']:
         return f"❌ {result.get('error', 'Error desconocido')}\n{result.get('message', '')}"
     
@@ -93,7 +113,14 @@ def format_plates_result(result: Dict) -> str:
     
     return "\n".join(lines)
 
+
 def get_standard_bar_weights() -> List[Tuple[str, float]]:
+    """
+    Retorna lista de pesos estándar de barras.
+    
+    Returns:
+        Lista de tuplas (nombre, peso_kg)
+    """
     return [
         ("Barra Olímpica Estándar", 20.0),
         ("Barra Olímpica Mujer", 15.0),
@@ -103,13 +130,37 @@ def get_standard_bar_weights() -> List[Tuple[str, float]]:
         ("Barra de Entrenamiento Juvenil", 10.0)
     ]
 
+
 def calculate_rest_time(exercise_type: str = "strength", intensity: str = "medium") -> int:
+    """
+    Calcula tiempo de descanso recomendado según tipo de ejercicio e intensidad.
+    
+    Args:
+        exercise_type: Tipo de ejercicio ("strength", "hypertrophy", "endurance", "power")
         intensity: Intensidad ("low", "medium", "high")
         
     Returns:
         Tiempo de descanso recomendado en segundos
+    """
+    rest_times = {
+        "power": {"low": 180, "medium": 240, "high": 300},
+        "strength": {"low": 120, "medium": 180, "high": 240},
+        "hypertrophy": {"low": 60, "medium": 90, "high": 120},
+        "endurance": {"low": 30, "medium": 45, "high": 60}
+    }
+    
+    return rest_times.get(exercise_type, rest_times["strength"]).get(intensity, 90)
+
 
 def format_time(seconds: int) -> str:
+    """
+    Formatea segundos a formato legible.
+    
+    Returns:
+        String formateado (ej: "2:30" o "45s")
+    """
+    if seconds < 60:
+        return f"{seconds}s"
     
     minutes = seconds // 60
     remaining_seconds = seconds % 60
@@ -118,6 +169,7 @@ def format_time(seconds: int) -> str:
         return f"{minutes}min"
     
     return f"{minutes}:{remaining_seconds:02d}"
+
 
 if __name__ == "__main__":
     print("=== Calculadora de Discos ===\n")

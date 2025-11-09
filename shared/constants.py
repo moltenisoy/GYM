@@ -1,3 +1,8 @@
+"""
+Constantes centralizadas para el sistema GYM.
+Todos los números mágicos, strings y valores de configuración por defecto están definidos aquí.
+"""
+
 DEFAULT_HOST_IP = "0.0.0.0"
 DEFAULT_HOST_PORT = 8000
 DEFAULT_MADRE_BASE_URL = "http://127.0.0.1:8000"
