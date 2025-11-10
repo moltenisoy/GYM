@@ -1,10 +1,3 @@
-# madre_db.py
-#
-# Base de datos SQLite para el Sistema de Gestión del Gimnasio.
-# Gestiona información de socios, membresías, clases y operaciones del gimnasio.
-#
-# NOTA SOBRE CONCURRENCIA: Se usa threading.Lock para garantizar
-# thread-safety entre la GUI administrativa y el servidor API.
 
 import sqlite3
 import threading
@@ -16,19 +9,15 @@ import json
 from config.settings import get_madre_settings
 from shared.logger import setup_logger
 
-# Inicializar logger
 logger = setup_logger(__name__, log_file="madre_db.log")
 
-# Cargar configuración
 settings = get_madre_settings()
 
-# Ruta de la base de datos (from configuration)
 DB_PATH = settings.DB_PATH if os.path.isabs(
     settings.DB_PATH) else os.path.join(
         os.path.dirname(__file__),
     settings.DB_PATH)
 
-# Lock para thread-safety
 db_lock = threading.Lock()
 
 logger.info(f"Database module initialized - DB Path: {DB_PATH}")
@@ -47,7 +36,7 @@ def get_db_connection() -> sqlite3.Connection:
     try:
         os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
         conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-        conn.row_factory = sqlite3.Row  # Permite acceso por nombre de columna
+        conn.row_factory = sqlite3.Row
         return conn
     except Exception as e:
         logger.error(f"Error creating database connection: {e}", exc_info=True)
@@ -68,7 +57,6 @@ def init_database() -> None:
             conn = get_db_connection()
             cursor = conn.cursor()
 
-            # Tabla de usuarios
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,7 +72,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de fotos de perfil
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS profile_photos (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,7 +82,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de cronogramas de entrenamiento
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS training_schedules (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -109,7 +95,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de galería de fotos
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS photo_gallery (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,7 +106,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de datos de sincronización global
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS sync_data (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -131,7 +115,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de mensajes
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -147,7 +130,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de adjuntos de mensajes
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS message_attachments (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -160,7 +142,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de mensajes de chat en vivo
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS chat_messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -172,7 +153,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de servidores madre para sincronización multi-madre
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS madre_servers (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -184,7 +164,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de clases grupales
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS classes (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -200,7 +179,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de horarios de clases
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS class_schedules (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -217,7 +195,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de reservas de clases
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS class_bookings (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -235,7 +212,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de lista de espera
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS class_waitlist (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -251,7 +227,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de calificaciones de clases
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS class_ratings (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -269,7 +244,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de equipos y zonas
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS equipment_zones (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -286,7 +260,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de reservas de equipos/zonas
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS equipment_reservations (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -305,7 +278,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de ejercicios
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS exercises (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -319,7 +291,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de logs de entrenamiento
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS workout_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -338,7 +309,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de tokens de check-in (QR/NFC)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS checkin_tokens (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -352,7 +322,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de historial de check-ins
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS checkin_history (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -365,7 +334,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de notificaciones
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS notifications (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -383,7 +351,6 @@ def init_database() -> None:
                 )
             ''')
 
-            # Tabla de preferencias de usuario
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS user_preferences (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -592,7 +559,6 @@ def save_training_schedule(user_id: int, mes: str, ano: int, schedule_data: Dict
         now = datetime.now().isoformat()
         schedule_json = json.dumps(schedule_data, ensure_ascii=False)
 
-        # Verificar si existe
         cursor.execute('''
             SELECT id FROM training_schedules
             WHERE user_id = ? AND mes = ? AND ano = ?
@@ -685,7 +651,6 @@ def update_sync_data(contenido: str, version: str = None) -> bool:
         cursor = conn.cursor()
 
         if version is None:
-            # Obtener versión actual e incrementar
             cursor.execute('SELECT metadatos_version FROM sync_data ORDER BY id DESC LIMIT 1')
             row = cursor.fetchone()
             if row:
@@ -707,9 +672,6 @@ def update_sync_data(contenido: str, version: str = None) -> bool:
         conn.close()
         return True
 
-# ============================================================================
-# FUNCIONES DE MENSAJERÍA
-# ============================================================================
 
 
 def send_message(from_user: str, to_user: str, subject: str, body: str,
@@ -810,9 +772,7 @@ def delete_message(message_id: int) -> bool:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Primero eliminar adjuntos
         cursor.execute('DELETE FROM message_attachments WHERE message_id = ?', (message_id,))
-        # Luego eliminar mensaje
         cursor.execute('DELETE FROM messages WHERE id = ?', (message_id,))
 
         conn.commit()
@@ -878,12 +838,9 @@ def export_message_to_txt(message_id: int, output_path: str) -> bool:
 
         return True
     except Exception as e:
-        print(f"Error exportando mensaje: {e}")
+        logger.error(f"Error exportando mensaje: {e}", exc_info=True)
         return False
 
-# ============================================================================
-# FUNCIONES DE CHAT EN VIVO
-# ============================================================================
 
 
 def send_chat_message(from_user: str, to_user: str, message: str) -> Optional[int]:
@@ -953,9 +910,6 @@ def count_unread_chat_messages(username: str) -> int:
         conn.close()
         return row['count'] if row else 0
 
-# ============================================================================
-# FUNCIONES DE MULTI-MADRE (SINCRONIZACIÓN ENTRE SERVIDORES)
-# ============================================================================
 
 
 def add_madre_server(server_name: str, server_url: str, sync_token: str = "") -> bool:
@@ -1006,9 +960,6 @@ def update_madre_server_sync(server_name: str) -> bool:
         return success
 
 
-# ============================================================================
-# GESTIÓN DE CLASES Y RESERVAS
-# ============================================================================
 
 def create_class(nombre: str, descripcion: str, instructor: str, duracion: int,
                  capacidad_maxima: int, intensidad: str = "media", tipo: str = "grupal") -> Optional[int]:
@@ -1129,7 +1080,6 @@ def book_class(user_id: int, schedule_id: int, fecha_clase: str) -> tuple[bool, 
             conn = get_db_connection()
             cursor = conn.cursor()
 
-            # Verificar capacidad
             cursor.execute('''
                 SELECT cs.class_id, c.capacidad_maxima,
                        (SELECT COUNT(*) FROM class_bookings
@@ -1151,7 +1101,6 @@ def book_class(user_id: int, schedule_id: int, fecha_clase: str) -> tuple[bool, 
                 conn.close()
                 return False, "Clase llena - se agregó a lista de espera"
 
-            # Verificar si ya está reservado
             cursor.execute('''
                 SELECT id FROM class_bookings
                 WHERE user_id = ? AND schedule_id = ? AND fecha_clase = ?
@@ -1161,7 +1110,6 @@ def book_class(user_id: int, schedule_id: int, fecha_clase: str) -> tuple[bool, 
                 conn.close()
                 return False, "Ya tienes una reserva para esta clase"
 
-            # Crear reserva
             booking_date = datetime.now().isoformat()
             cursor.execute('''
                 INSERT INTO class_bookings (user_id, schedule_id, fecha_clase, booking_date, status)
@@ -1197,14 +1145,12 @@ def cancel_booking(booking_id: int) -> tuple[bool, str]:
             success = cursor.rowcount > 0
 
             if success:
-                # Obtener información de la reserva para notificar lista de espera
                 cursor.execute('''
                     SELECT schedule_id, fecha_clase FROM class_bookings WHERE id = ?
                 ''', (booking_id,))
                 booking_info = cursor.fetchone()
 
                 if booking_info:
-                    # Notificar al primero en lista de espera
                     schedule_id = booking_info['schedule_id']
                     fecha_clase = booking_info['fecha_clase']
                     notify_waitlist(conn, cursor, schedule_id, fecha_clase)
@@ -1224,7 +1170,6 @@ def cancel_booking(booking_id: int) -> tuple[bool, str]:
 def notify_waitlist(conn, cursor, schedule_id: int, fecha_clase: str):
     """Notifica al primero en lista de espera cuando se libera un cupo."""
     try:
-        # Obtener primero en lista de espera
         cursor.execute('''
             SELECT id, user_id FROM class_waitlist
             WHERE schedule_id = ? AND fecha_clase = ? AND status = 'waiting'
@@ -1239,7 +1184,6 @@ def notify_waitlist(conn, cursor, schedule_id: int, fecha_clase: str):
         waitlist_id = waitlist_entry['id']
         user_id = waitlist_entry['user_id']
 
-        # Crear notificación con temporizador de 10 minutos
         from datetime import timedelta
         expires_date = (datetime.now() + timedelta(minutes=10)).isoformat()
 
@@ -1251,7 +1195,6 @@ def notify_waitlist(conn, cursor, schedule_id: int, fecha_clase: str):
         ''', (user_id, json.dumps({'schedule_id': schedule_id, 'fecha_clase': fecha_clase}),
               datetime.now().isoformat(), expires_date))
 
-        # Actualizar lista de espera
         cursor.execute('''
             UPDATE class_waitlist
             SET status = 'notified', notified_date = ?, confirmation_deadline = ?
@@ -1343,9 +1286,6 @@ def rate_class(user_id: int, class_id: int, schedule_id: int, fecha_clase: str,
             return False, "Error al enviar calificación"
 
 
-# ============================================================================
-# GESTIÓN DE EQUIPOS Y ZONAS
-# ============================================================================
 
 def create_equipment_zone(nombre: str, tipo: str, descripcion: str = "",
                           cantidad: int = 1, duracion_slot: int = 60) -> Optional[int]:
@@ -1396,7 +1336,6 @@ def reserve_equipment(user_id: int, equipment_id: int, fecha_reserva: str,
             conn = get_db_connection()
             cursor = conn.cursor()
 
-            # Verificar disponibilidad
             cursor.execute('''
                 SELECT COUNT(*) as count FROM equipment_reservations
                 WHERE equipment_id = ? AND fecha_reserva = ? AND status = 'confirmed'
@@ -1411,7 +1350,6 @@ def reserve_equipment(user_id: int, equipment_id: int, fecha_reserva: str,
                 conn.close()
                 return False, "Equipo/zona no disponible en ese horario"
 
-            # Crear reserva
             booking_date = datetime.now().isoformat()
             cursor.execute('''
                 INSERT INTO equipment_reservations
@@ -1428,9 +1366,6 @@ def reserve_equipment(user_id: int, equipment_id: int, fecha_reserva: str,
             return False, "Error al reservar equipo"
 
 
-# ============================================================================
-# GESTIÓN DE WORKOUT LOGS
-# ============================================================================
 
 def create_exercise(nombre: str, descripcion: str = "", categoria: str = "",
                     equipo_necesario: str = "") -> Optional[int]:
@@ -1511,9 +1446,6 @@ def get_all_exercises() -> List[Dict[str, Any]]:
         return [dict(row) for row in rows]
 
 
-# ============================================================================
-# GESTIÓN DE CHECK-IN Y TOKENS
-# ============================================================================
 
 def generate_checkin_token(user_id: int, token_type: str = "qr") -> tuple[bool, str]:
     """Genera un token de check-in (QR/NFC)."""
@@ -1522,7 +1454,6 @@ def generate_checkin_token(user_id: int, token_type: str = "qr") -> tuple[bool, 
             conn = get_db_connection()
             cursor = conn.cursor()
 
-            # Generar token único
             import secrets
             token = secrets.token_urlsafe(32)
             generated_date = datetime.now().isoformat()
@@ -1563,9 +1494,6 @@ def checkin_user(user_id: int, location: str = "entrada") -> tuple[bool, str]:
             return False, "Error al registrar check-in"
 
 
-# ============================================================================
-# GESTIÓN DE NOTIFICACIONES
-# ============================================================================
 
 def create_notification(user_id: int, tipo: str, titulo: str, mensaje: str,
                         data: str = "", action_url: str = "", expires_date: str = None) -> Optional[int]:
@@ -1616,13 +1544,4 @@ def get_user_notifications(user_id: int, unread_only: bool = False) -> List[Dict
         return [dict(row) for row in rows]
 
 
-# Inicializar la base de datos al importar el módulo
 init_database()
-
-# Import and initialize extended database features
-try:
-    from madre_db_extended import init_extended_database
-    init_extended_database()
-    logger.info("Extended database features initialized successfully")
-except Exception as e:
-    logger.error(f"Error initializing extended database features: {e}", exc_info=True)

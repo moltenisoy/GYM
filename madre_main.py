@@ -1,9 +1,3 @@
-# madre_main.py
-#
-# Punto de entrada principal para la Aplicación Madre (Administración del Gimnasio).
-# Este script orquesta el lanzamiento de los dos componentes principales:
-# 1. El servidor FastAPI (en un hilo de fondo) - API para comunicación con socios.
-# 2. La aplicación GUI de CustomTkinter (en el hilo principal) - Panel de administración.
 
 import threading
 import uvicorn
@@ -12,10 +6,8 @@ from madre_server import app as app_servidor
 from config.settings import get_madre_settings
 from shared.logger import setup_logger
 
-# Inicializar logger
 logger = setup_logger(__name__, log_file="madre_main.log")
 
-# Cargar configuración desde variables de entorno
 settings = get_madre_settings()
 
 
@@ -30,7 +22,6 @@ def iniciar_servidor() -> None:
     """
     logger.info("Iniciando servidor FastAPI/uvicorn en http://%s:%s", settings.HOST, settings.PORT)
     try:
-        # Convert log level string to uvicorn log level
         uvicorn_log_level = settings.LOG_LEVEL.lower()
         if uvicorn_log_level not in ['critical', 'error', 'warning', 'info', 'debug', 'trace']:
             uvicorn_log_level = 'info'
@@ -46,33 +37,18 @@ if __name__ == "__main__":
     logger.info("Configuración: %s", settings)
 
     try:
-        # 1. Configurar el hilo del servidor
-        # Creamos un hilo que tendrá como objetivo la función 'iniciar_servidor'.
         hilo_servidor = threading.Thread(target=iniciar_servidor, name="ServerThread")
 
-        # Establecer como 'daemon=True'.
-        # Esto significa que el hilo del servidor se cerrará automáticamente
-        # cuando el hilo principal (la GUI) termine.
         hilo_servidor.daemon = True
 
-        # 2. Iniciar el hilo del servidor
-        # El servidor comenzará a escuchar peticiones en segundo plano.
         hilo_servidor.start()
         logger.info("Hilo del servidor iniciado en segundo plano")
 
-        # 3. Iniciar la aplicación GUI
-        # Creamos la instancia de la aplicación GUI.
         logger.info("Iniciando GUI de la aplicación...")
         app_gui = AppMadre()
 
-        # Iniciamos el bucle principal de la GUI.
-        # Esta es una llamada BLOQUEANTE que se ejecutará en el hilo principal.
-        # La aplicación permanecerá aquí hasta que el usuario cierre la ventana.
         app_gui.mainloop()
 
-        # Cuando el usuario cierra la ventana, app.mainloop() termina.
-        # El programa principal finaliza, y como 'hilo_servidor' es un daemon,
-        # se detendrá automáticamente.
         logger.info("Aplicación Madre cerrada. Deteniendo el servidor...")
 
     except KeyboardInterrupt:

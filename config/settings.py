@@ -82,7 +82,6 @@ class HijaSettings:
         return f"HijaSettings(MADRE_BASE_URL={self.MADRE_BASE_URL}, LOG_LEVEL={self.LOG_LEVEL})"
 
 
-# Instancias singleton
 _madre_settings: Optional[MadreSettings] = None
 _hija_settings: Optional[HijaSettings] = None
 
@@ -141,22 +140,18 @@ def load_env_file(env_path: str = '.env') -> bool:
         with open(env_path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
-                # Saltar comentarios y líneas vacías
                 if not line or line.startswith('#'):
                     continue
 
-                # Parsear KEY=VALUE
                 if '=' in line:
                     key, value = line.split('=', 1)
                     key = key.strip()
                     value = value.strip()
-                    # Remover comillas si están presentes
                     if value.startswith('"') and value.endswith('"'):
                         value = value[1:-1]
                     elif value.startswith("'") and value.endswith("'"):
                         value = value[1:-1]
 
-                    # Solo configurar si no está ya en el entorno
                     if key not in os.environ:
                         os.environ[key] = value
 
@@ -166,6 +161,5 @@ def load_env_file(env_path: str = '.env') -> bool:
         return False
 
 
-# Intentar cargar archivo .env al importar el módulo
 load_env_file('.env')
 load_env_file('config/.env')

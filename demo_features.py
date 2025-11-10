@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 """
 Demo script para probar las nuevas funcionalidades del sistema de gimnasio.
 Este script demuestra el uso de las APIs y funciones implementadas.
@@ -8,10 +8,9 @@ import requests
 from datetime import datetime, timedelta
 from shared.workout_utils import calculate_plates, format_plates_result, calculate_rest_time, format_time
 
-# Configuración
 BASE_URL = "http://localhost:8000"
 USERNAME = "juan_perez"
-REQUEST_TIMEOUT = 10  # Timeout en segundos para requests
+REQUEST_TIMEOUT = 10
 
 
 def print_section(title):
@@ -80,7 +79,6 @@ def demo_class_schedules():
         data = response.json()
 
         if data["status"] == "success":
-            # Agrupar por día
             schedules_by_day = {}
             for schedule in data["horarios"]:
                 day = schedule["dia_semana"]
@@ -88,7 +86,6 @@ def demo_class_schedules():
                     schedules_by_day[day] = []
                 schedules_by_day[day].append(schedule)
 
-            # Ordenar días
             days_order = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
 
             for day in days_order:
@@ -107,12 +104,10 @@ def demo_book_class():
     """Demuestra la reserva de una clase."""
     print_section("5. RESERVA DE CLASE (ONE-CLICK)")
 
-    # Obtener fecha de la próxima semana
     next_monday = datetime.now() + timedelta(days=(7 - datetime.now().weekday()))
     fecha_clase = next_monday.strftime("%Y-%m-%d")
 
     try:
-        # Reservar clase de Spinning (schedule_id=1)
         response = requests.post(
             f"{BASE_URL}/clases/reservar",
             json={
@@ -128,7 +123,6 @@ def demo_book_class():
         print(f"Estado: {data.get('status')}")
         print(f"Mensaje: {data.get('message')}")
 
-        # Ver mis reservas
         response = requests.get(f"{BASE_URL}/clases/mis-reservas?username={USERNAME}", timeout=REQUEST_TIMEOUT)
         data = response.json()
 
@@ -149,7 +143,6 @@ def demo_equipment():
         data = response.json()
 
         if data["status"] == "success":
-            # Agrupar por tipo
             equipment_by_type = {}
             for equipo in data["equipos"]:
                 tipo = equipo["tipo"]
@@ -176,7 +169,6 @@ def demo_exercises():
         data = response.json()
 
         if data["status"] == "success":
-            # Agrupar por categoría
             exercises_by_category = {}
             for ejercicio in data["ejercicios"]:
                 categoria = ejercicio["categoria"]
@@ -200,7 +192,6 @@ def demo_workout_log():
     print_section("8. QUICK LOG - REGISTRO DE ENTRENAMIENTO")
 
     try:
-        # Registrar una serie de sentadillas
         fecha = datetime.now().strftime("%Y-%m-%d")
 
         print("Registrando serie de Sentadillas...")
@@ -208,7 +199,7 @@ def demo_workout_log():
             f"{BASE_URL}/workout/log",
             json={
                 "username": USERNAME,
-                "exercise_id": 2,  # Sentadillas
+                "exercise_id": 2,
                 "fecha": fecha,
                 "serie": 1,
                 "repeticiones": 12,
@@ -222,7 +213,6 @@ def demo_workout_log():
         print(f"Estado: {data.get('status')}")
         print(f"Mensaje: {data.get('message')}")
 
-        # Ver historial
         response = requests.get(
             f"{BASE_URL}/workout/historial?username={USERNAME}&exercise_id=2&limit=5",
             timeout=REQUEST_TIMEOUT
@@ -285,11 +275,9 @@ def main():
     print("  DEMO - NUEVAS FUNCIONALIDADES DEL SISTEMA DE GIMNASIO")
     print("=" * 60)
 
-    # Verificar que el servidor esté corriendo
     if not demo_api_status():
         return
 
-    # Ejecutar demos
     demo_list_classes()
     demo_class_schedules()
     demo_book_class()
@@ -298,7 +286,6 @@ def main():
     demo_workout_log()
     demo_checkin_token()
 
-    # Demos locales (no requieren servidor)
     demo_plates_calculator()
     demo_rest_timer()
 

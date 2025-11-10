@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-# populate_db.py
-#
-# Script para poblar la base de datos con usuarios de prueba y datos de ejemplo.
+
 
 import madre_db
 
@@ -11,7 +8,17 @@ def create_sample_users():
 
     print("Creando usuarios de ejemplo...")
 
-    # Usuario 1: Juan Pérez
+    if madre_db.create_user(
+        username="admin",
+        password="admin123",
+        nombre_completo="Administrador del Sistema",
+        email="admin@gym.example.com",
+        telefono="+34 600 000 000",
+        equipo="Administración",
+        permiso_acceso=True
+    ):
+        print("✓ Usuario 'admin' creado")
+
     if madre_db.create_user(
         username="juan_perez",
         password="gym2024",
@@ -23,18 +30,15 @@ def create_sample_users():
     ):
         print("✓ Usuario 'juan_perez' creado")
 
-        # Obtener ID del usuario
         user = madre_db.get_user("juan_perez")
         user_id = user['id']
 
-        # Añadir foto de perfil (ruta simulada)
         madre_db.set_user_profile_photo(
             user_id,
             "data/users/profile_photos/juan_perez.jpg"
         )
         print("  - Foto de perfil añadida")
 
-        # Crear cronograma de entrenamiento para diciembre 2024
         schedule_data = {
             "dias": {
                 "lunes": {
@@ -80,7 +84,6 @@ def create_sample_users():
         madre_db.save_training_schedule(user_id, "Diciembre", 2024, schedule_data)
         print("  - Cronograma de entrenamiento añadido")
 
-        # Añadir fotos a la galería
         gallery_photos = [
             ("data/users/gallery/juan_perez_progress_1.jpg", "Progreso mes 1 - Peso inicial"),
             ("data/users/gallery/juan_perez_progress_2.jpg", "Progreso mes 2 - Definición"),
@@ -91,7 +94,6 @@ def create_sample_users():
             madre_db.add_photo_to_gallery(user_id, photo_path, descripcion)
         print(f"  - {len(gallery_photos)} fotos añadidas a la galería")
 
-    # Usuario 2: María López
     if madre_db.create_user(
         username="maria_lopez",
         password="fit2024",
@@ -112,7 +114,6 @@ def create_sample_users():
         )
         print("  - Foto de perfil añadida")
 
-        # Cronograma enfocado en cardio
         schedule_data = {
             "dias": {
                 "lunes": {
@@ -167,7 +168,6 @@ def create_sample_users():
             madre_db.add_photo_to_gallery(user_id, photo_path, descripcion)
         print(f"  - {len(gallery_photos)} fotos añadidas a la galería")
 
-    # Usuario 3: Carlos Rodríguez (sin permisos)
     if madre_db.create_user(
         username="carlos_rodriguez",
         password="trainer123",
@@ -188,7 +188,6 @@ def create_sample_users():
         )
         print("  - Foto de perfil añadida")
 
-        # Cronograma básico para principiantes
         schedule_data = {
             "dias": {
                 "lunes": {
@@ -309,7 +308,6 @@ def populate_classes_and_schedules():
 
     from datetime import datetime, timedelta
 
-    # Fecha de inicio (lunes de esta semana)
     today = datetime.now()
     days_until_monday = (today.weekday()) % 7
     monday = (today - timedelta(days=days_until_monday)).date().isoformat()
@@ -413,7 +411,6 @@ def populate_classes_and_schedules():
         if class_id:
             print(f"✓ Clase '{class_info['nombre']}' creada (ID: {class_id})")
 
-            # Crear horarios
             for horario in class_info["horarios"]:
                 schedule_id = madre_db.create_class_schedule(
                     class_id=class_id,

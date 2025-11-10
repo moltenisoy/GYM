@@ -1,17 +1,9 @@
-# madre_gui.py
-#
-# Define la Interfaz Gráfica de Usuario (GUI) para la Aplicación Madre
-# (Panel de Administración del Gimnasio) usando CustomTkinter.
-# Esta GUI permite al personal administrativo gestionar socios, membresías,
-# permisos de acceso y contenido de sincronización.
 
 import customtkinter
 import requests
 
-# Importar la base de datos
 import madre_db
 
-# Configuración inicial de apariencia
 customtkinter.set_appearance_mode("dark")
 customtkinter.set_default_color_theme("blue")
 
@@ -28,7 +20,6 @@ class UserDetailWindow(customtkinter.CTkToplevel):
         self.title(f"Detalles del Socio: {username}")
         self.geometry("700x600")
 
-        # Obtener datos del usuario
         user = madre_db.get_user(username)
         if not user:
             self.destroy()
@@ -36,11 +27,9 @@ class UserDetailWindow(customtkinter.CTkToplevel):
 
         user_id = user['id']
 
-        # Frame principal con scroll
         main_frame = customtkinter.CTkScrollableFrame(self)
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Información personal
         lbl_titulo = customtkinter.CTkLabel(
             main_frame,
             text="Información Personal",
@@ -68,7 +57,6 @@ class UserDetailWindow(customtkinter.CTkToplevel):
             val = customtkinter.CTkLabel(info_frame, text=str(value))
             val.grid(row=i, column=1, padx=10, pady=3, sticky="w")
 
-        # Cronograma de entrenamiento
         lbl_schedule = customtkinter.CTkLabel(
             main_frame,
             text="Cronograma de Entrenamiento",
@@ -85,7 +73,6 @@ class UserDetailWindow(customtkinter.CTkToplevel):
             schedule_text = customtkinter.CTkTextbox(schedule_frame, height=200)
             schedule_text.pack(fill="both", expand=True, padx=5, pady=5)
 
-            # Formatear cronograma
             content = f"Mes: {schedule['mes']} {schedule['ano']}\n"
             content += f"Objetivo: {schedule['schedule_data'].get('objetivo', 'N/A')}\n"
             content += f"Notas: {schedule['schedule_data'].get('notas', 'N/A')}\n\n"
@@ -103,7 +90,6 @@ class UserDetailWindow(customtkinter.CTkToplevel):
             lbl_no_schedule = customtkinter.CTkLabel(schedule_frame, text="Sin cronograma asignado")
             lbl_no_schedule.pack(pady=10)
 
-        # Galería de fotos
         lbl_gallery = customtkinter.CTkLabel(
             main_frame,
             text="Galería de Fotos",
@@ -139,7 +125,6 @@ class UserDetailWindow(customtkinter.CTkToplevel):
             lbl_no_gallery = customtkinter.CTkLabel(gallery_frame, text="Sin fotos en la galería")
             lbl_no_gallery.pack(pady=10)
 
-        # Botón cerrar
         btn_close = customtkinter.CTkButton(
             main_frame,
             text="Cerrar",
@@ -160,11 +145,9 @@ class MessageDetailWindow(customtkinter.CTkToplevel):
         self.title(f"Mensaje de {message.get('from_user', 'Desconocido')}")
         self.geometry("700x500")
 
-        # Frame principal con scroll
         main_frame = customtkinter.CTkScrollableFrame(self)
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Información del mensaje
         lbl_from = customtkinter.CTkLabel(
             main_frame,
             text=f"De: {message.get('from_user', 'Desconocido')}",
@@ -195,13 +178,11 @@ class MessageDetailWindow(customtkinter.CTkToplevel):
         )
         lbl_subject.pack(fill="x", pady=10)
 
-        # Cuerpo del mensaje
         textbox = customtkinter.CTkTextbox(main_frame, height=250)
         textbox.pack(fill="both", expand=True, pady=10)
         textbox.insert("1.0", message.get('body', ''))
         textbox.configure(state="disabled")
 
-        # Adjuntos
         attachments = madre_db.get_message_attachments(message['id'])
         if attachments:
             lbl_attachments = customtkinter.CTkLabel(
@@ -223,7 +204,6 @@ class MessageDetailWindow(customtkinter.CTkToplevel):
                 )
                 lbl_att.pack(side="left", padx=10, pady=5)
 
-        # Botón cerrar
         btn_close = customtkinter.CTkButton(
             main_frame,
             text="Cerrar",
@@ -241,13 +221,11 @@ class Dashboard(customtkinter.CTkTabview):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
-        # Crear y añadir pestañas
         self.add("Gestión de Usuarios")
         self.add("Sincronización de Contenido")
         self.add("Sincronización Masiva")
         self.add("Buzón de Mensajes")
 
-        # Poblar cada pestaña
         self._crear_pestaña_usuarios()
         self._crear_pestaña_sincronizacion()
         self._crear_pestaña_sync_masiva()
@@ -270,7 +248,6 @@ class Dashboard(customtkinter.CTkTabview):
                                           text="Habilite o deshabilite el acceso para las Aplicaciones Hijas.")
         lbl_desc.grid(row=1, column=0, padx=20, pady=(0, 10), sticky="w")
 
-        # El CTkScrollableFrame es esencial para listas largas de usuarios.
         self.scrollable_frame_usuarios = customtkinter.CTkScrollableFrame(tab_usuarios, height=300)
         self.scrollable_frame_usuarios.grid(row=2, column=0, padx=20, pady=10, sticky="nsew")
         self.scrollable_frame_usuarios.grid_columnconfigure(0, weight=1)
@@ -281,25 +258,21 @@ class Dashboard(customtkinter.CTkTabview):
             command=self._actualizar_vista_usuarios)
         btn_actualizar.grid(row=3, column=0, padx=20, pady=10)
 
-        # Poblar la lista por primera vez
         self._actualizar_vista_usuarios()
 
     def _actualizar_vista_usuarios(self):
         """
         Limpia y vuelve a poblar el frame desplazable con los usuarios de madre_db.
         """
-        # Limpiar widgets antiguos
         for widget in self.scrollable_frame_usuarios.winfo_children():
             widget.destroy()
 
-        # Volver a poblar con datos frescos de la base de datos
         usuarios = madre_db.get_all_users()
 
         for i, user in enumerate(usuarios):
             username = user['username']
             permiso_actual = bool(user['permiso_acceso'])
 
-            # Crear un frame para cada fila de usuario
             user_frame = customtkinter.CTkFrame(self.scrollable_frame_usuarios)
             user_frame.grid(row=i, column=0, padx=10, pady=5, sticky="ew")
             user_frame.grid_columnconfigure(1, weight=1)
@@ -320,7 +293,6 @@ class Dashboard(customtkinter.CTkTabview):
             )
             lbl_datos.grid(row=0, column=1, padx=10, pady=5, sticky="w")
 
-            # Botón para ver detalles
             btn_detalles = customtkinter.CTkButton(
                 user_frame,
                 text="Ver Detalles",
@@ -329,7 +301,6 @@ class Dashboard(customtkinter.CTkTabview):
             )
             btn_detalles.grid(row=0, column=2, padx=5, pady=5)
 
-            # Switch de permisos
             switch_permiso = customtkinter.CTkSwitch(
                 user_frame,
                 text="Acceso Habilitado",
@@ -356,15 +327,14 @@ class Dashboard(customtkinter.CTkTabview):
             madre_db.update_user_permission(username, nuevo_estado)
             print(f"Permiso para '{username}' actualizado a: {nuevo_estado}")
 
-            # Notificar al servidor (si está corriendo localmente)
             try:
                 requests.post(
                     "http://localhost:8000/actualizar_permiso",
                     json={"username": username, "permiso_acceso": nuevo_estado},
                     timeout=1
                 )
-            except BaseException:
-                pass  # El servidor actualizará desde la BD compartida
+            except Exception:
+                pass
 
     def _crear_pestaña_sincronizacion(self):
         """Puebla la pestaña 'Sincronización de Contenido'."""
@@ -382,11 +352,9 @@ class Dashboard(customtkinter.CTkTabview):
         self.textbox_sync = customtkinter.CTkTextbox(tab_sync)
         self.textbox_sync.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
 
-        # Cargar contenido actual
         sync_data = madre_db.get_sync_data()
         self.textbox_sync.insert("1.0", sync_data.get("contenido", ""))
 
-        # Label de versión
         self.lbl_version = customtkinter.CTkLabel(
             tab_sync,
             text=f"Versión actual: {sync_data.get('metadatos_version', '1.0.0')}",
@@ -419,11 +387,9 @@ class Dashboard(customtkinter.CTkTabview):
         )
         lbl_desc.grid(row=1, column=0, padx=20, pady=5, sticky="w")
 
-        # Lista de usuarios con checkboxes
         self.scrollable_frame_masiva = customtkinter.CTkScrollableFrame(tab_masiva, height=300)
         self.scrollable_frame_masiva.grid(row=2, column=0, padx=20, pady=10, sticky="nsew")
 
-        # Botones de acción
         btn_frame = customtkinter.CTkFrame(tab_masiva, fg_color="transparent")
         btn_frame.grid(row=3, column=0, padx=20, pady=10)
 
@@ -449,7 +415,6 @@ class Dashboard(customtkinter.CTkTabview):
         )
         btn_sincronizar.pack(side="left", padx=5)
 
-        # Status label
         self.lbl_status_masiva = customtkinter.CTkLabel(
             tab_masiva,
             text="",
@@ -457,7 +422,6 @@ class Dashboard(customtkinter.CTkTabview):
         )
         self.lbl_status_masiva.grid(row=4, column=0, padx=20, pady=5)
 
-        # Poblar lista de usuarios
         self._actualizar_lista_sync_masiva()
 
     def _actualizar_lista_sync_masiva(self):
@@ -503,13 +467,11 @@ class Dashboard(customtkinter.CTkTabview):
             )
             return
 
-        # Actualizar timestamp de sincronización para cada usuario
         exitosos = 0
         for username in usuarios_seleccionados:
             if madre_db.update_user_sync(username):
                 exitosos += 1
 
-        # Notificar al servidor si está disponible
         try:
             response = requests.post(
                 "http://localhost:8000/sincronizar_masiva",
@@ -526,7 +488,7 @@ class Dashboard(customtkinter.CTkTabview):
                     text=f"Advertencia: Actualizado localmente ({exitosos} usuarios), servidor no respondió",
                     text_color="orange"
                 )
-        except BaseException:
+        except Exception:
             self.lbl_status_masiva.configure(
                 text=f"✓ Actualizado localmente: {exitosos} usuarios (servidor no disponible)",
                 text_color="green"
@@ -540,14 +502,11 @@ class Dashboard(customtkinter.CTkTabview):
         """
         nuevo_contenido = self.textbox_sync.get("1.0", "end-1c")
 
-        # Actualizar en la base de datos (auto-incrementa versión)
         madre_db.update_sync_data(nuevo_contenido)
 
-        # Obtener nueva versión
         sync_data = madre_db.get_sync_data()
         nueva_version = sync_data.get("metadatos_version", "1.0.0")
 
-        # Actualizar label de versión
         self.lbl_version.configure(text=f"Versión actual: {nueva_version}")
 
         print(f"Nuevos datos de sincronización publicados. Versión: {nueva_version}")
@@ -558,7 +517,6 @@ class Dashboard(customtkinter.CTkTabview):
         tab_mensajes.grid_columnconfigure(0, weight=1)
         tab_mensajes.grid_rowconfigure(1, weight=1)
 
-        # Header con contador de no leídos
         header_frame = customtkinter.CTkFrame(tab_mensajes)
         header_frame.grid(row=0, column=0, padx=20, pady=10, sticky="ew")
 
@@ -585,11 +543,9 @@ class Dashboard(customtkinter.CTkTabview):
         )
         btn_actualizar.pack(side="right", padx=10)
 
-        # Lista de mensajes
         self.scrollable_mensajes = customtkinter.CTkScrollableFrame(tab_mensajes)
         self.scrollable_mensajes.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
 
-        # Cargar mensajes inicial
         self._actualizar_mensajes()
 
     def _actualizar_mensajes(self):
@@ -597,11 +553,9 @@ class Dashboard(customtkinter.CTkTabview):
         for widget in self.scrollable_mensajes.winfo_children():
             widget.destroy()
 
-        # Obtener mensajes para "admin"
         messages = madre_db.get_user_messages("admin", include_read=True)
         unread_count = madre_db.count_unread_messages("admin")
 
-        # Actualizar contador
         self.lbl_unread_count.configure(text=f"📬 {unread_count} no leídos")
 
         if not messages:
@@ -617,7 +571,6 @@ class Dashboard(customtkinter.CTkTabview):
             msg_frame.grid_columnconfigure(1, weight=1)
             msg_frame.pack(fill="x", padx=5, pady=5)
 
-            # Indicador de leído/no leído
             indicator = "●" if not msg.get('is_read') else "○"
             color = "#2563eb" if not msg.get('is_read') else "gray"
 
@@ -629,7 +582,6 @@ class Dashboard(customtkinter.CTkTabview):
             )
             lbl_indicator.grid(row=0, column=0, padx=5, pady=5)
 
-            # Info del mensaje
             info_frame = customtkinter.CTkFrame(msg_frame, fg_color="transparent")
             info_frame.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
@@ -648,7 +600,6 @@ class Dashboard(customtkinter.CTkTabview):
             )
             lbl_date.pack(side="right", padx=5)
 
-            # Botones de acción
             btn_frame = customtkinter.CTkFrame(msg_frame, fg_color="transparent")
             btn_frame.grid(row=0, column=2, padx=5, pady=5)
 
@@ -689,13 +640,10 @@ class Dashboard(customtkinter.CTkTabview):
 
     def _ver_mensaje(self, msg: dict):
         """Muestra los detalles de un mensaje en una ventana emergente."""
-        # Marcar como leído
         madre_db.mark_message_read(msg['id'])
 
-        # Crear ventana emergente
         dialog = MessageDetailWindow(self, msg)
 
-        # Actualizar lista después de cerrar
         dialog.protocol("WM_DELETE_WINDOW", lambda: self._cerrar_mensaje_dialog(dialog))
 
     def _cerrar_mensaje_dialog(self, dialog):
@@ -709,7 +657,6 @@ class Dashboard(customtkinter.CTkTabview):
         dialog.title(f"Responder a {msg.get('from_user', 'Desconocido')}")
         dialog.geometry("600x400")
 
-        # Frame de contenido
         content_frame = customtkinter.CTkFrame(dialog)
         content_frame.pack(fill="both", expand=True, padx=10, pady=10)
         content_frame.grid_columnconfigure(0, weight=1)
@@ -751,7 +698,6 @@ class Dashboard(customtkinter.CTkTabview):
         if not to_user or not body.strip():
             return
 
-        # Enviar mensaje
         madre_db.send_message("admin", to_user, subject, body, parent_id)
 
         dialog.destroy()
@@ -761,7 +707,6 @@ class Dashboard(customtkinter.CTkTabview):
         """Exporta un mensaje a archivo .txt."""
         import tkinter.filedialog as filedialog
 
-        # Pedir ruta de archivo
         filename = filedialog.asksaveasfilename(
             defaultextension=".txt",
             filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
@@ -771,12 +716,10 @@ class Dashboard(customtkinter.CTkTabview):
         if filename:
             success = madre_db.export_message_to_txt(msg['id'], filename)
             if success:
-                # Mostrar confirmación
                 print(f"Mensaje exportado a: {filename}")
 
     def _eliminar_mensaje(self, msg: dict):
         """Elimina un mensaje."""
-        # Confirmar eliminación (simple - en producción usar un diálogo)
         madre_db.delete_message(msg['id'])
         self._actualizar_mensajes()
 

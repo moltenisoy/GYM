@@ -1,28 +1,19 @@
-# madre_server.py
-#
-# Define la lógica del servidor API usando FastAPI para el Sistema de Gestión del Gimnasio.
-# Esta API será consumida por las Aplicaciones de los Socios (Aplicaciones Hijas).
-# Importa la base de datos SQLite desde 'madre_db'.
 
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
-# Importar la base de datos
 import madre_db
 from shared.logger import setup_logger
 from shared.constants import APP_VERSION, APP_FEATURES, SYNC_REQUIRED_HOURS
 
-# Inicializar logger
 logger = setup_logger(__name__, log_file="madre_server.log")
 
-# Crear la instancia de la aplicación FastAPI
 app = FastAPI(title="API del Sistema de Gestión del Gimnasio", version=APP_VERSION)
 
 logger.info(f"FastAPI application initialized - Version {APP_VERSION}")
 
-# Include extended API routers for features 1-16
 try:
     from madre_server_extended_api import get_extended_api_router
     from madre_server_extended_api2 import get_extended_api_router2
@@ -33,7 +24,6 @@ try:
 except Exception as e:
     logger.error(f"Error including extended API routers: {e}", exc_info=True)
 
-# --- Modelos de Datos (Pydantic) ---
 
 
 class AuthRequest(BaseModel):
@@ -45,7 +35,6 @@ class UserUpdateRequest(BaseModel):
     username: str
     permiso_acceso: bool
 
-# --- Endpoints de la API ---
 
 
 @app.post("/autorizar", summary="Autoriza el inicio de sesión de una Aplicación Hija")
@@ -65,7 +54,6 @@ async def autorizar_usuario(auth_request: AuthRequest):
     """
     logger.info(f"Intento de autorización para usuario: {auth_request.username}")
 
-    # Autenticar usuario
     success, user_data = madre_db.authenticate_user(
         auth_request.username,
         auth_request.password
@@ -75,17 +63,14 @@ async def autorizar_usuario(auth_request: AuthRequest):
         logger.warning(f"Credenciales inválidas para usuario: {auth_request.username}")
         raise HTTPException(status_code=401, detail="Credenciales inválidas.")
 
-    # Verificar permiso de acceso
     if not user_data.get('permiso_acceso'):
         logger.warning(f"Acceso denegado para usuario: {auth_request.username}")
         raise HTTPException(status_code=403, detail="Permiso de acceso denegado por el administrador.")
 
-    # Actualizar última sincronización
     madre_db.update_user_sync(auth_request.username)
 
     logger.info(f"Autorización exitosa para usuario: {auth_request.username}")
 
-    # Retornar información del usuario
     return {
         "status": "aprobado",
         "usuario": auth_request.username,
@@ -172,19 +157,14 @@ async def obtener_datos_sync(
 
     user_id = user['id']
 
-    # Obtener foto de perfil
     profile_photo = madre_db.get_user_profile_photo(user_id)
 
-    # Obtener cronograma actual
     training_schedule = madre_db.get_training_schedule(user_id)
 
-    # Obtener galería de fotos
     photo_gallery = madre_db.get_photo_gallery(user_id)
 
-    # Obtener datos de sincronización global
     sync_data = madre_db.get_sync_data()
 
-    # Actualizar última sincronización
     madre_db.update_user_sync(usuario)
 
     return {
@@ -249,7 +229,6 @@ async def obtener_usuarios():
     Usado por la app Madre para gestión.
     """
     usuarios = madre_db.get_all_users()
-    # Remover password_hash de la respuesta
     for user in usuarios:
         user.pop('password_hash', None)
 
@@ -258,9 +237,6 @@ async def obtener_usuarios():
         "usuarios": usuarios
     }
 
-# ============================================================================
-# ENDPOINTS DE MENSAJERÍA
-# ============================================================================
 
 
 class MessageRequest(BaseModel):
@@ -361,9 +337,6 @@ async def contar_no_leidos(usuario: str = Query(..., description="Nombre de usua
         "mensajes_no_leidos": count
     }
 
-# ============================================================================
-# ENDPOINTS DE CHAT EN VIVO
-# ============================================================================
 
 
 @app.post("/enviar_chat", summary="Enviar mensaje de chat en vivo")
@@ -420,9 +393,6 @@ async def contar_chat_no_leidos(usuario: str = Query(..., description="Nombre de
         "chat_no_leidos": count
     }
 
-# ============================================================================
-# ENDPOINTS DE MULTI-MADRE
-# ============================================================================
 
 
 @app.post("/registrar_servidor_madre", summary="Registrar otro servidor Madre")
@@ -463,12 +433,10 @@ async def health_check():
         Dict con status, version, database_status
     """
     try:
-        # Verificar conectividad de base de datos
         _ = len(madre_db.get_all_users())
         db_status = "healthy"
         logger.debug("Health check: Database connection OK")
     except Exception as e:
-        # No exponer detalles del error por seguridad
         db_status = "unhealthy"
         logger.error(f"Health check: Database error - {e}", exc_info=True)
 
@@ -479,9 +447,6 @@ async def health_check():
     }
 
 
-# ============================================================================
-# ENDPOINTS DE CLASES Y RESERVAS
-# ============================================================================
 
 class ClassBookingRequest(BaseModel):
     username: str
@@ -525,7 +490,6 @@ async def get_schedules(class_id: Optional[int] = None):
 async def book_class(booking: ClassBookingRequest):
     """One-Click Booking: Reserva una clase con un solo toque."""
     try:
-        # Obtener user_id
         user = madre_db.get_user(booking.username)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
@@ -535,7 +499,6 @@ async def book_class(booking: ClassBookingRequest):
         )
 
         if not success and "llena" in message:
-            # Agregar a lista de espera automáticamente
             success_wl, msg_wl = madre_db.add_to_waitlist(
                 user['id'], booking.schedule_id, booking.fecha_clase
             )
@@ -613,9 +576,6 @@ async def rate_class(rating: ClassRatingRequest):
         raise HTTPException(status_code=500, detail="Error al calificar clase")
 
 
-# ============================================================================
-# ENDPOINTS DE EQUIPOS Y ZONAS
-# ============================================================================
 
 class EquipmentReservationRequest(BaseModel):
     username: str
@@ -660,9 +620,6 @@ async def reserve_equipment(reservation: EquipmentReservationRequest):
         raise HTTPException(status_code=500, detail="Error al reservar equipo")
 
 
-# ============================================================================
-# ENDPOINTS DE WORKOUT LOGGING
-# ============================================================================
 
 class WorkoutLogRequest(BaseModel):
     username: str
@@ -726,9 +683,6 @@ async def get_exercise_history(username: str, exercise_id: int, limit: int = 10)
         raise HTTPException(status_code=500, detail="Error al obtener historial")
 
 
-# ============================================================================
-# ENDPOINTS DE CHECK-IN Y TOKENS
-# ============================================================================
 
 @app.post("/checkin/generate-token", summary="Genera token de check-in QR/NFC")
 async def generate_checkin_token(username: str, token_type: str = "qr"):
@@ -772,9 +726,6 @@ async def checkin(username: str, location: str = "entrada"):
         raise HTTPException(status_code=500, detail="Error al registrar check-in")
 
 
-# ============================================================================
-# ENDPOINTS DE NOTIFICACIONES
-# ============================================================================
 
 @app.get("/notificaciones", summary="Obtiene notificaciones del usuario")
 async def get_notifications(username: str, unread_only: bool = False):
@@ -793,9 +744,6 @@ async def get_notifications(username: str, unread_only: bool = False):
         raise HTTPException(status_code=500, detail="Error al obtener notificaciones")
 
 
-# ============================================================================
-# UTILIDADES
-# ============================================================================
 
 @app.post("/utilidades/calculadora-discos", summary="Calcula discos para barra")
 async def calculate_plates(target_weight: float, bar_weight: float = 20.0):

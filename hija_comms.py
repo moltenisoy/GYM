@@ -1,9 +1,3 @@
-# hija_comms.py
-#
-# Módulo de Comunicaciones de la Aplicación de Socios (Aplicación Hija).
-# Encapsula toda la lógica de red usando la biblioteca 'requests' para
-# comunicarse con el servidor del gimnasio.
-# Incluye gestión de credenciales persistentes y validación de sincronización.
 
 import requests
 import json
@@ -25,13 +19,10 @@ from shared.constants import (
     CREDENTIALS_FILENAME
 )
 
-# Inicializar logger
 logger = setup_logger(__name__, log_file="hija_comms.log")
 
-# Cargar configuración
 settings = get_hija_settings()
 
-# Directorio para datos locales
 if os.path.isabs(settings.LOCAL_DATA_DIR):
     LOCAL_DATA_DIR = settings.LOCAL_DATA_DIR
 else:
@@ -59,7 +50,6 @@ class APICommunicator:
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
 
-        # Control de estado de conexión
         self.is_connected = False
         self.last_successful_request = None
         self.consecutive_failures = 0
@@ -67,7 +57,6 @@ class APICommunicator:
         os.makedirs(LOCAL_DATA_DIR, exist_ok=True)
         logger.info("APICommunicator initialized with base_url: %s", self.base_url)
 
-        # Realizar ping inicial para validar conexión
         self._check_connectivity()
 
     def _check_connectivity(self) -> bool:
@@ -139,7 +128,6 @@ class APICommunicator:
                 response.raise_for_status()
                 logger.debug("Request successful: %s %s", method, url)
 
-                # Actualizar estado de conexión exitosa
                 self.is_connected = True
                 self.last_successful_request = datetime.now()
                 self.consecutive_failures = 0
@@ -152,7 +140,6 @@ class APICommunicator:
                 self.is_connected = False
 
                 if attempt < max_retries - 1:
-                    # Exponential backoff with jitter (random 0-1 second)
                     wait_time = (2 ** attempt) + random.uniform(0, 1)
                     logger.warning(
                         "Request failed (attempt %d/%d): %s. Retrying in %.2fs...",
@@ -160,7 +147,6 @@ class APICommunicator:
                     )
                     time.sleep(wait_time)
 
-                    # Intentar reconectar después de múltiples fallos
                     if self.consecutive_failures >= 2:
                         logger.info("Intentando reestablecer conexión...")
                         self._check_connectivity()
@@ -169,10 +155,8 @@ class APICommunicator:
                     raise
 
             except requests.exceptions.HTTPError as e:
-                # Registrar error HTTP pero intentar mantener sesión
                 logger.error("HTTP error: %s", e)
 
-                # Para errores 5xx del servidor, podemos reintentar
                 if e.response.status_code >= 500 and attempt < max_retries - 1:
                     wait_time = (2 ** attempt) + random.uniform(0, 1)
                     logger.warning(
@@ -184,7 +168,6 @@ class APICommunicator:
 
                 raise
 
-        # Should not reach here, but just in case
         raise last_exception
 
     def get_connection_status(self) -> Dict[str, Any]:
@@ -215,7 +198,6 @@ class APICommunicator:
     def save_credentials(self, username: str, password: str) -> bool:
         """Guarda las credenciales localmente (cifradas básicamente)."""
         try:
-            # Simple ofuscación (en producción usar keyring o similar)
             password_hash = hashlib.sha256(password.encode()).hexdigest()
             data = {
                 "username": username,
@@ -286,12 +268,11 @@ class APICommunicator:
                 url,
                 json=payload,
                 timeout=settings.HTTP_TIMEOUT_SHORT,
-                max_retries=2  # Only 2 retries for login
+                max_retries=2
             )
 
             data = response.json()
             if data.get("status") == STATUS_APPROVED:
-                # Guardar credenciales localmente
                 self.save_credentials(username, password)
                 logger.info("Login successful for user: %s", username)
                 return True, data
@@ -412,16 +393,12 @@ class APICommunicator:
             logger.error("Unexpected error during sync for %s: %s", username, e, exc_info=True)
             return False, {"error": f"Error inesperado: {e}"}
 
-    # ============================================================================
-    # FUNCIONES DE MENSAJERÍA
-    # ============================================================================
 
     def send_message(self, to_user: str, subject: str, body: str,
                      parent_message_id: Optional[int] = None) -> Tuple[bool, dict]:
         """Envía un mensaje."""
         url = f"{self.base_url}/enviar_mensaje"
 
-        # Obtener username actual de credenciales
         creds = self.load_credentials()
         from_user = creds.get('username', 'unknown') if creds else 'unknown'
 
@@ -457,7 +434,6 @@ class APICommunicator:
         """Obtiene los mensajes del usuario."""
         url = f"{self.base_url}/obtener_mensajes"
 
-        # Obtener username actual de credenciales
         creds = self.load_credentials()
         username = creds.get('username', '') if creds else ''
 
@@ -507,7 +483,6 @@ class APICommunicator:
         """Cuenta los mensajes no leídos."""
         url = f"{self.base_url}/contar_no_leidos"
 
-        # Obtener username actual de credenciales
         creds = self.load_credentials()
         username = creds.get('username', '') if creds else ''
 
@@ -526,15 +501,11 @@ class APICommunicator:
         except Exception:
             return False, 0
 
-    # ============================================================================
-    # FUNCIONES DE CHAT EN VIVO
-    # ============================================================================
 
     def send_chat_message(self, to_user: str, message: str) -> Tuple[bool, dict]:
         """Envía un mensaje de chat en vivo."""
         url = f"{self.base_url}/enviar_chat"
 
-        # Obtener username actual de credenciales
         creds = self.load_credentials()
         from_user = creds.get('username', 'unknown') if creds else 'unknown'
 
@@ -558,7 +529,6 @@ class APICommunicator:
         """Obtiene el historial de chat con otro usuario."""
         url = f"{self.base_url}/obtener_chat"
 
-        # Obtener username actual de credenciales
         creds = self.load_credentials()
         username = creds.get('username', '') if creds else ''
 

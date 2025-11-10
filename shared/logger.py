@@ -41,23 +41,18 @@ def setup_logger(
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    # Prevenir handlers duplicados
     if logger.handlers:
         return logger
 
-    # Crear directorio de logs si no existe
     log_dir = os.path.join(os.path.dirname(__file__), '..', LOG_DIR_NAME)
     os.makedirs(log_dir, exist_ok=True)
 
-    # Determinar ruta del archivo de log
     if log_file is None:
         log_file = f"{name}.log"
     log_path = os.path.join(log_dir, log_file)
 
-    # Crear formateador
     formatter = logging.Formatter(LOG_FORMAT, LOG_DATE_FORMAT)
 
-    # Handler de archivo con rotación
     file_handler = RotatingFileHandler(
         log_path,
         maxBytes=LOG_FILE_MAX_BYTES,
@@ -68,7 +63,6 @@ def setup_logger(
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    # Handler de consola (opcional)
     if console_output:
         console_handler = logging.StreamHandler()
         console_handler.setLevel(level)

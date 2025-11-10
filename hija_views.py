@@ -1,10 +1,3 @@
-# hija_views.py
-#
-# Define las "vistas" o "páginas" de la Aplicación de Socios (Aplicación Hija).
-# Estas clases son componentes puros de GUI (CustomTkinter) que permiten a los
-# socios del gimnasio acceder a su información, reservar clases, y gestionar su membresía.
-# No contienen lógica de negocio o de red.
-# Reciben un 'controlador' o 'comando' para notificar acciones del usuario.
 
 import customtkinter
 
@@ -18,9 +11,8 @@ class LoginFrame(customtkinter.CTkFrame):
     def __init__(self, master, on_login_attempt, **kwargs):
         super().__init__(master, **kwargs)
 
-        self.on_login_attempt = on_login_attempt  # Callback al controlador
+        self.on_login_attempt = on_login_attempt
 
-        # Frame interno para el efecto "tarjeta"
         card_frame = customtkinter.CTkFrame(self)
         card_frame.pack(pady=40, padx=40)
 
@@ -46,7 +38,6 @@ class LoginFrame(customtkinter.CTkFrame):
         )
         self.entry_password.pack(pady=12, padx=30)
 
-        # Vincular la tecla "Enter" para que también intente el login
         self.entry_username.bind("<Return>", lambda e: self.entry_password.focus())
         self.entry_password.bind("<Return>", self._handle_login_event)
 
@@ -76,18 +67,15 @@ class LoginFrame(customtkinter.CTkFrame):
             self.show_status("Por favor, ingrese una contraseña.")
             return
 
-        # Deshabilitar el botón para evitar clics múltiples
         self.btn_login.configure(text="Conectando...", state="disabled")
         self.lbl_status.configure(text="")
 
-        # Llamar a la función del controlador (en hija_main.py)
         self.on_login_attempt(username, password)
 
     def show_status(self, message: str, is_error: bool = True):
         """Muestra un mensaje de estado (ej. un error) al usuario."""
         color = "red" if is_error else "green"
         self.lbl_status.configure(text=message, text_color=color)
-        # Rehabilitar el botón
         self.btn_login.configure(text="Conectar a la Madre", state="normal")
 
     def get_username(self) -> str:
@@ -111,37 +99,22 @@ class MainAppFrame(customtkinter.CTkFrame):
         self.on_send_message = on_send_message
         self.on_send_chat = on_send_chat
 
-        # Configurar grid principal
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        # ===============================
-        # BARRA SUPERIOR - Perfil de Usuario
-        # ===============================
         self._crear_barra_superior()
 
-        # ===============================
-        # SIDEBAR IZQUIERDA - Navegación
-        # ===============================
         self._crear_sidebar()
 
-        # ===============================
-        # ÁREA DE CONTENIDO PRINCIPAL
-        # ===============================
         self.content_frame = customtkinter.CTkFrame(self, fg_color="transparent")
         self.content_frame.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
         self.content_frame.grid_columnconfigure(0, weight=1)
         self.content_frame.grid_rowconfigure(0, weight=1)
 
-        # Variable para trackear la vista actual
         self.current_view = None
 
-        # Mostrar vista inicial
         self._mostrar_perfil()
 
-        # ===============================
-        # BARRA DE ESTADO INFERIOR
-        # ===============================
         self.status_frame = customtkinter.CTkFrame(self, height=30)
         self.status_frame.grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
 
@@ -158,7 +131,6 @@ class MainAppFrame(customtkinter.CTkFrame):
         header_frame.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
         header_frame.grid_propagate(False)
 
-        # Nombre y equipo del usuario
         nombre_completo = self.user_data.get('nombre_completo', self.username)
         equipo = self.user_data.get('equipo', 'Sin equipo')
 
@@ -193,7 +165,6 @@ class MainAppFrame(customtkinter.CTkFrame):
             )
             lbl_email.pack(anchor="w")
 
-        # Botón de sincronización
         self.btn_sync = customtkinter.CTkButton(
             header_frame,
             text="⟳ Sincronizar",
@@ -210,7 +181,6 @@ class MainAppFrame(customtkinter.CTkFrame):
         sidebar_frame.grid(row=1, column=0, padx=(10, 0), pady=(0, 10), sticky="nsew")
         sidebar_frame.grid_propagate(False)
 
-        # Título del sidebar
         lbl_menu = customtkinter.CTkLabel(
             sidebar_frame,
             text="📋 MENÚ PRINCIPAL",
@@ -219,7 +189,6 @@ class MainAppFrame(customtkinter.CTkFrame):
         )
         lbl_menu.pack(padx=15, pady=(20, 10), anchor="w")
 
-        # Botones de navegación
         self.nav_buttons = {}
 
         nav_items = [
@@ -250,11 +219,9 @@ class MainAppFrame(customtkinter.CTkFrame):
             btn.pack(padx=10, pady=5, fill="x")
             self.nav_buttons[key] = btn
 
-        # Separador
         separator = customtkinter.CTkFrame(sidebar_frame, height=2, fg_color="gray30")
         separator.pack(padx=10, pady=20, fill="x")
 
-        # Info adicional
         info_label = customtkinter.CTkLabel(
             sidebar_frame,
             text="Sistema GYM v3.0\nConexión segura activa",
@@ -283,14 +250,12 @@ class MainAppFrame(customtkinter.CTkFrame):
         self._activar_boton_nav("home")
         self.current_view = "perfil"
 
-        # Crear frame scrollable para perfil
         profile_scroll = customtkinter.CTkScrollableFrame(
             self.content_frame,
             label_text="👤 PERFIL DE USUARIO"
         )
         profile_scroll.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Información del usuario
         info_data = [
             ("Usuario:", self.user_data.get('username', 'N/A')),
             ("Nombre Completo:", self.user_data.get('nombre_completo', 'N/A')),
@@ -370,7 +335,6 @@ class MainAppFrame(customtkinter.CTkFrame):
         msg_frame.grid_columnconfigure(0, weight=1)
         msg_frame.grid_rowconfigure(1, weight=1)
 
-        # Header con botón de nuevo mensaje
         header = customtkinter.CTkFrame(msg_frame)
         header.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
@@ -389,7 +353,6 @@ class MainAppFrame(customtkinter.CTkFrame):
         )
         btn_nuevo.pack(side="right", padx=10)
 
-        # Lista de mensajes
         self.scrollable_mensajes = customtkinter.CTkScrollableFrame(msg_frame)
         self.scrollable_mensajes.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
@@ -410,7 +373,6 @@ class MainAppFrame(customtkinter.CTkFrame):
         chat_frame.grid_columnconfigure(0, weight=1)
         chat_frame.grid_rowconfigure(1, weight=1)
 
-        # Header
         header = customtkinter.CTkFrame(chat_frame)
         header.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
@@ -421,11 +383,9 @@ class MainAppFrame(customtkinter.CTkFrame):
         )
         lbl_title.pack(side="left", padx=10)
 
-        # Área de mensajes de chat
         self.scrollable_chat = customtkinter.CTkScrollableFrame(chat_frame)
         self.scrollable_chat.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-        # Input de mensaje
         input_frame = customtkinter.CTkFrame(chat_frame)
         input_frame.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
         input_frame.grid_columnconfigure(0, weight=1)
@@ -445,7 +405,6 @@ class MainAppFrame(customtkinter.CTkFrame):
         )
         btn_enviar.grid(row=0, column=1, padx=5, pady=5)
 
-        # Mensaje inicial
         lbl_inicial = customtkinter.CTkLabel(
             self.scrollable_chat,
             text="Inicia una conversación con la administración.\nEscribe un mensaje abajo para comenzar.",
@@ -463,8 +422,6 @@ class MainAppFrame(customtkinter.CTkFrame):
         destinatario = dialog.get_input()
 
         if destinatario and self.on_send_message:
-            # Aquí se podría abrir un diálogo más completo
-            # Por ahora solo mostramos un mensaje de info
             self.lbl_status.configure(
                 text=f"📝 Preparando mensaje para {destinatario}..."
             )
@@ -473,10 +430,9 @@ class MainAppFrame(customtkinter.CTkFrame):
         """Envía un mensaje de chat."""
         mensaje = self.entry_chat.get()
         if mensaje and self.on_send_chat:
-            self.on_send_chat("admin", mensaje)  # Enviar a admin
+            self.on_send_chat("admin", mensaje)
             self.entry_chat.delete(0, "end")
 
-            # Añadir mensaje a la vista
             msg_frame = customtkinter.CTkFrame(self.scrollable_chat)
             msg_frame.pack(fill="x", padx=5, pady=3, anchor="e")
 
@@ -488,25 +444,15 @@ class MainAppFrame(customtkinter.CTkFrame):
             )
             lbl_msg.pack(padx=10, pady=5)
 
-        # --- Pie de Página de Estado ---
-        self.lbl_status = customtkinter.CTkLabel(
-            self,
-            text="Aplicación iniciada. Sincronización automática activa.",
-            height=20
-        )
-        self.lbl_status.grid(row=2, column=0, padx=20, pady=5, sticky="w")
-
     def _handle_sync_event(self):
         """Manejador interno para el botón de sincronización."""
         self.btn_sync.configure(text="⟳ Sincronizando...", state="disabled")
         self.lbl_status.configure(text="⟳ Contactando a la Madre...")
 
-        # Llamar al callback del controlador (en hija_main.py)
         self.on_sync_attempt()
 
     def update_content(self, sync_data: dict):
         """Actualiza todos los datos sincronizados en la vista activa."""
-        # Actualizar cronograma si la vista está activa
         training_schedule = sync_data.get('training_schedule')
         if training_schedule and self.current_view == "cronograma":
             self.textbox_cronograma.configure(state="normal")
@@ -530,7 +476,6 @@ class MainAppFrame(customtkinter.CTkFrame):
             self.textbox_cronograma.insert("1.0", content)
             self.textbox_cronograma.configure(state="disabled")
 
-        # Actualizar galería si la vista está activa
         photo_gallery = sync_data.get('photo_gallery', [])
         if self.current_view == "galeria":
             for widget in self.scrollable_galeria.winfo_children():
@@ -610,7 +555,6 @@ class MainAppFrame(customtkinter.CTkFrame):
             msg_frame = customtkinter.CTkFrame(self.scrollable_mensajes)
             msg_frame.pack(fill="x", padx=5, pady=5)
 
-            # Indicador de leído/no leído
             indicator = "●" if not msg.get('is_read') else "○"
             color = "#2563eb" if not msg.get('is_read') else "gray"
 
@@ -641,7 +585,6 @@ class MainAppFrame(customtkinter.CTkFrame):
             )
             lbl_subject.pack(fill="x", padx=10, pady=2)
 
-            # Botón para ver mensaje
             btn_view = customtkinter.CTkButton(
                 msg_frame,
                 text="Ver Mensaje",
@@ -653,12 +596,10 @@ class MainAppFrame(customtkinter.CTkFrame):
 
     def _ver_mensaje_detalle(self, msg: dict):
         """Muestra los detalles de un mensaje."""
-        # Crear ventana emergente para el mensaje
         dialog = customtkinter.CTkToplevel(self)
         dialog.title(f"Mensaje de {msg.get('from_user', 'Desconocido')}")
         dialog.geometry("600x400")
 
-        # Contenido del mensaje
         content_frame = customtkinter.CTkScrollableFrame(dialog)
         content_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
